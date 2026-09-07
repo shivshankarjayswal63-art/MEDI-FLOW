@@ -1,17 +1,3 @@
-# Dependencies
-node_modules/
-**/node_modules/
-/.pnp
-.pnp.js
-
-# Build outputs
-/build
-/dist
-**/dist
-**/dist-ssr
-/out
-*.local
-
 # Environment variables
 **/.env
 frontend/.env
@@ -20,6 +6,7 @@ BACKEND/.env
 .env.development.local
 .env.test.local
 .env.production.local
+**/.env.*
 
 # Logs
 logs
@@ -33,19 +20,9 @@ lerna-debug.log*
 # Testing
 /coverage
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea/
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
 # Backend specific
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -66,10 +43,16 @@ var/
 .installed.cfg
 *.egg
 
-# Frontend specific caches
-.cache/
-.next/
-.nuxt/
-.tmp/
-*.tsbuildinfo
-.cache-loader/
+# Large model files and datasets
+*.pkl
+BACKEND/ai-model/datasets/
+**/*.pth
+**/model_weights/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
