@@ -69,10 +69,11 @@ export default function MedicalAssistantChat() {
       setMessages((prev) => [...prev, { role: "assistant", content: reply, meta: data }]);
     } catch (err) {
       const isTimeout = err.name === "AbortError";
+      const api = import.meta.env.VITE_API_URL || "(not set)";
       setError(
         isTimeout
-          ? "The assistant took too long. Try a shorter question or try again."
-          : err.message || "Could not reach the server."
+          ? `Request timed out (API: ${api}). Try again or use a shorter question.`
+          : `${err.message || "Could not reach the server."} (API: ${api})`
       );
       setMessages((prev) => [
         ...prev,

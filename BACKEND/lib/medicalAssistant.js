@@ -3,6 +3,13 @@ const { analyzeSymptoms, normalizeSymptom, CONDITION_PROFILES } = require("./sym
 const NVIDIA_BASE = "https://integrate.api.nvidia.com/v1/chat/completions";
 const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
 
+function nemotronTimeoutMs() {
+  const fromEnv = Number(process.env.MEDICAL_ASSISTANT_LLM_TIMEOUT_MS);
+  if (fromEnv > 0) return fromEnv;
+  // Vercel serverless often limits ~10s — fail fast and use rules fallback
+  return process.env.VERCEL ? 7500 : 55000;
+}
+
 const SYNONYM_REPLACEMENTS = [
   { canonical: "shortness of breath", patterns: ["sob", "can't breathe", "cannot breathe", "hard to breathe", "breathless"] },
   { canonical: "stomach pain", patterns: ["tummy ache", "belly pain", "abdominal pain", "stomach ache"] },
@@ -237,7 +244,8 @@ async function callNemotron(userMessage, history, context) {
   ];
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
+  const timeoutMs = nemotronTimeoutMs();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(NVIDIA_BASE, {
@@ -304,11 +312,12 @@ async function processMedicalChat(message, history) {
     conditionInfo: info ? { title: info.title, blurb: info.blurb } : null,
   };
 
+  const rulesReply = buildRulesReply(message, analysis, info);
   let reply = await callNemotron(message, history, context);
   let source = "nemotron";
 
   if (!reply) {
-    reply = buildRulesReply(message, analysis, info);
+    reply = rulesReply;
     source = "rules";
   } else if (analysis?.urgent && !reply.toLowerCase().includes("emergency")) {
     reply +=

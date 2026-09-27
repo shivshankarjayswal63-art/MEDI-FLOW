@@ -27,6 +27,14 @@ Optional: `AI_API_URL`, `EMAIL_USER`, `EMAIL_PASS`, `DATABASE_URL` (for migratio
 
 Without `NVIDIA_API_KEY`, `/api/medical-assistant/chat` still works using the built-in symptom screening + FAQ replies.
 
+**Medical assistant not working?**
+
+1. Patient must be **logged in** → side menu **☰ → Medical assistant** or `/medical-assistant`.
+2. Frontend `VITE_API_URL` must point at this API (e.g. `https://medi-flow-api.vercel.app`) — redeploy frontend after changing.
+3. Test API: `POST /api/medical-assistant/chat` with body `{"message":"what is asthma"}`.
+4. **Local dev:** run `npm start` in `BACKEND` and set `frontend/.env` `VITE_API_URL=http://localhost:5000`.
+5. On Vercel free tier, slow Nemotron calls fall back to the **screening engine** after ~7s (still returns an answer).
+
 ---
 
 ## Common Vercel mistake

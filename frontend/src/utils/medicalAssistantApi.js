@@ -27,6 +27,11 @@ export async function sendMedicalAssistantMessage(message, history = []) {
     clearTimeout(timeoutId);
 
     if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error(
+          "Medical assistant API not found. Redeploy the BACKEND on Vercel (latest main) and check VITE_API_URL."
+        );
+      }
       const errBody = await res.json().catch(() => ({}));
       throw new Error(errBody.message || `Server responded with ${res.status}`);
     }
