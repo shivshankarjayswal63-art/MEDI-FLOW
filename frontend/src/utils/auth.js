@@ -20,7 +20,9 @@ export function getStoredRole() {
 }
 
 export function getDashboardPath(role) {
-  return routeForRole(role || getStoredRole() || "patient");
+  const r = role || getStoredRole();
+  if (!r) return "/login";
+  return routeForRole(r);
 }
 
 export function logout() {

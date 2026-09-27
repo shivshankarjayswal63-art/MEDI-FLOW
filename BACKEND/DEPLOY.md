@@ -96,6 +96,18 @@ npm run admin:ensure
 
 Log in on the site at **/login** — you should land on **/User-Dashboard**.
 
+### Portal roles (separate logins & routes)
+
+| Role | Login URL | Dashboard |
+|------|-----------|-----------|
+| Patient | `/login` | `/patient-dashboard` |
+| Platform admin | `/login` | `/User-Dashboard` |
+| Pharmacy admin | `/login` | `/Pharmacy-Dashboard` |
+| Appointment admin | `/login` | `/Appointment-Dashboard` |
+| Doctor | `/login-doctor` | `/Doctor-Dashboard` |
+
+Doctor emails cannot use `/login`; staff emails cannot use `/login-doctor`. JWT `role` is enforced on dashboard APIs and key patient routes.
+
 **Medical assistant booking:** patient must be logged in; chat uses `POST /api/medical-assistant/book` with JWT.
 
 **Medical assistant chat history (optional):** run `supabase/migrations/003_medical_assistant_chat.sql` on Supabase so signed-in patients get server-side saved chats (`GET /api/medical-assistant/session`). Without it, chats still persist in the browser.

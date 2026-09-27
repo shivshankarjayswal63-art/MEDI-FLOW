@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
@@ -28,6 +28,25 @@ function DoctorLogin() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    if (!token || !role) return;
+    if (role === "doctor") {
+      navigate("/Doctor-Dashboard", { replace: true });
+    } else {
+      navigate(
+        {
+          user_admin: "/User-Dashboard",
+          pharmacy_admin: "/Pharmacy-Dashboard",
+          appointment_admin: "/Appointment-Dashboard",
+          patient: "/patient-dashboard",
+        }[role] || "/login",
+        { replace: true }
+      );
+    }
+  }, [navigate]);
 
   // Handle input change
   const handleChange = (e) => {
@@ -64,9 +83,10 @@ function DoctorLogin() {
       );
 
       // Save token and login status in localStorage
-      const { token, doctor } = response.data;
+      const { token, doctor, role: apiRole } = response.data;
+      const role = apiRole || "doctor";
       localStorage.setItem("token", token);
-      localStorage.setItem("role", "doctor");
+      localStorage.setItem("role", role);
       localStorage.setItem("isLoggedIn", "true");
       if (doctor?._id || doctor?.id) {
         localStorage.setItem("userId", doctor._id || doctor.id);

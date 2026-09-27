@@ -8,18 +8,19 @@ const {
   deleteUser,
 } = require("../Controllers/UserController");
 const authMiddleware = require("../Middleware/authMiddleware");
+const { requireRole, requireSelfOrRole } = require("../Middleware/roleMiddleware");
 
 // Protected Route to get logged-in user's profile
 router.get("/profile", authMiddleware, getUserProfile);
 
-// Get all users (admin use)
-router.get("/", getAllUsers);
+// Get all users (platform admin only)
+router.get("/", authMiddleware, requireRole("user_admin"), getAllUsers);
 
 // Get user by ID
-router.get("/:id", getById);
+router.get("/:id", authMiddleware, requireSelfOrRole("id", "user_admin"), getById);
 
-// Update user by ID
-router.put("/:id", updateUser);
+// Update user by ID (self or platform admin)
+router.put("/:id", authMiddleware, requireSelfOrRole("id", "user_admin"), updateUser);
 
 // Delete currently logged-in user (uses token for ID)
 router.delete("/delete", authMiddleware, deleteUser);

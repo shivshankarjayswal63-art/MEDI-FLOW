@@ -46,8 +46,20 @@ async function countTable(table, filterFn) {
   return 0;
 }
 
+const { canAccessPortal } = require("../lib/roles");
+
 exports.getSummary = async (req, res) => {
   const portal = req.query.portal || "user";
+  const role = req.user?.role;
+
+  if (portal !== "patient" && !canAccessPortal(role, portal)) {
+    return res.status(403).json({
+      message: "You do not have access to this dashboard.",
+      portal,
+      role: role || null,
+    });
+  }
+
   try {
     if (useSupabase()) {
       const supabase = getSupabase();

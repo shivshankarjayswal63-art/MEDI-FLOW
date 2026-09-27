@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { routeForRole, inferRoleFromEmail } from "../../utils/authRoutes";
-import { setAuthSession } from "../../utils/auth";
+import { setAuthSession, isAuthenticated, getStoredRole, getDashboardPath } from "../../utils/auth";
+import { isDoctorRole } from "../../utils/authRoutes";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -29,6 +30,17 @@ function Login() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+    const role = getStoredRole();
+    if (!role) return;
+    if (isDoctorRole(role)) {
+      navigate("/login-doctor", { replace: true });
+      return;
+    }
+    navigate(getDashboardPath(role), { replace: true });
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,6 +94,10 @@ function Login() {
         response.data.role ||
         response.data.user?.role ||
         inferRoleFromEmail(credentials.email);
+      if (isDoctorRole(role)) {
+        setError("Use Doctor Login for this account.");
+        return;
+      }
       setAuthSession({
         token: response.data.token,
         role,

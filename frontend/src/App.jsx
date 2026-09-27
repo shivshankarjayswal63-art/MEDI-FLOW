@@ -140,9 +140,11 @@ function App() {
           <Route
             path="/User-Account"
             element={
-              <PatientPortalOrPublic>
-                <MyAccount />
-              </PatientPortalOrPublic>
+              <RoleGuard allowedRoles={["patient"]}>
+                <PatientPortalOrPublic>
+                  <MyAccount />
+                </PatientPortalOrPublic>
+              </RoleGuard>
             }
           />
 
@@ -206,7 +208,14 @@ function App() {
               </RoleGuard>
             }
           />
-          <Route path="/recent-orders" element={<RecentOrders />} />
+          <Route
+            path="/recent-orders"
+            element={
+              <RoleGuard allowedRoles={["pharmacy_admin"]}>
+                <RecentOrders />
+              </RoleGuard>
+            }
+          />
 
           <Route path="/login-doctor" element={<DoctorLogin />} />
           <Route path="/register-doctor" element={<DoctorRegistration />} />
@@ -251,7 +260,14 @@ function App() {
             }
           />
 
-          <Route path="/Appoinment-Display" element={<AppoinmentDisplay />} />
+          <Route
+            path="/Appoinment-Display"
+            element={
+              <RoleGuard allowedRoles={["appointment_admin"]}>
+                <AppoinmentDisplay />
+              </RoleGuard>
+            }
+          />
           <Route
             path="/Appointment-Dashboard"
             element={

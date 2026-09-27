@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../Models/UserModel");
 const Doctor = require("../Models/DoctorManagement/doctorModel"); // Import Doctor model
+const { resolveUserRole, USER_PORTAL_ROLES } = require("../lib/roles");
 
 // Register a User (Signup)
 const registerUser = async (req, res) => {
@@ -63,7 +64,16 @@ const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const normalizedEmail = String(email).toLowerCase().trim();
+
+    const doctorAccount = await Doctor.findOne({ email: normalizedEmail });
+    if (doctorAccount) {
+      return res.status(403).json({
+        message: "This email is registered as a doctor. Please use Doctor Login (/login-doctor).",
+      });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
@@ -73,13 +83,10 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    const roleMap = {
-      "useradmin@gmail.com": "user_admin",
-      "zayacodehub@gmail.com": "user_admin",
-      "pharmacyadmin@gmail.com": "pharmacy_admin",
-      "appointmentadmin@gmail.com": "appointment_admin",
-    };
-    const role = user.role || roleMap[email.toLowerCase()] || "patient";
+    const role = resolveUserRole(user, normalizedEmail);
+    if (!USER_PORTAL_ROLES.includes(role)) {
+      return res.status(403).json({ message: "Account role is not allowed for patient/staff login." });
+    }
     const token = jwt.sign(
       { id: user._id, email: user.email, role },
       process.env.JWT_SECRET,
@@ -167,8 +174,19 @@ const loginDoctor = async (req, res) => {
 
   try {
     console.log(req.body);
-    const doctor = await Doctor.findOne({ email });
-    console.log(doctor);
+    const normalizedEmail = String(email).toLowerCase().trim();
+
+    const staffUser = await User.findOne({ email: normalizedEmail });
+    if (staffUser) {
+      const staffRole = resolveUserRole(staffUser, normalizedEmail);
+      if (staffRole !== "patient") {
+        return res.status(403).json({
+          message: "This email is a staff account. Use the main login at /login.",
+        });
+      }
+    }
+
+    const doctor = await Doctor.findOne({ email: normalizedEmail });
     if (!doctor) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
@@ -184,7 +202,12 @@ const loginDoctor = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    res.status(200).json({ message: "Doctor login successful", doctor, token });
+    res.status(200).json({
+      message: "Doctor login successful",
+      doctor,
+      role: "doctor",
+      token,
+    });
 
   } catch (err) {
     console.error(err);
