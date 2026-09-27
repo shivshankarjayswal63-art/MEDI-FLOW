@@ -1,5 +1,4 @@
 {
-  "$comment": "Use only when Vercel Root Directory is empty (repo root). For frontend-only deploy, set Root Directory to frontend and use frontend/vercel.json instead.",
   "installCommand": "cd frontend && npm install",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
