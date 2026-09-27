@@ -64,11 +64,15 @@ function DoctorLogin() {
       );
 
       // Save token and login status in localStorage
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("isLoggedIn", "true"); // ✅ Set login state
-      // Save doctor data in session
       const { token, doctor } = response.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", "doctor");
+      localStorage.setItem("isLoggedIn", "true");
+      if (doctor?._id || doctor?.id) {
+        localStorage.setItem("userId", doctor._id || doctor.id);
+      }
       sessionStorage.setItem("doctor", JSON.stringify(doctor));
+      window.dispatchEvent(new Event("medi-flow-auth"));
 
       alert("Login successful!");
       navigate("/Doctor-Dashboard"); // Redirect to user account page

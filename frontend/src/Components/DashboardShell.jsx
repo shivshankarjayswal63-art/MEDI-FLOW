@@ -21,6 +21,7 @@ import { Menu, Bell, Search, LogOut } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { brand } from "../theme/brand";
+import { logout as clearAuth } from "../utils/auth";
 
 const drawerWidth = 260;
 
@@ -70,8 +71,9 @@ export default function DashboardShell({
   const unread = notifications.filter((n) => !n.read).length;
 
   const logout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
+    const wasDoctor = sessionStorage.getItem("doctor");
+    clearAuth();
+    navigate(wasDoctor ? "/login-doctor" : "/login");
   };
 
   return (

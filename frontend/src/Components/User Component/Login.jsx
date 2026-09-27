@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { routeForRole, inferRoleFromEmail } from "../../utils/authRoutes";
+import { setAuthSession } from "../../utils/auth";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -63,15 +64,15 @@ function Login() {
   `${import.meta.env.VITE_API_URL}/api/auth/login`,
         formData
       );
-      localStorage.setItem("token", response.data.token);
       const role =
         response.data.role ||
         response.data.user?.role ||
         inferRoleFromEmail(formData.email);
-      localStorage.setItem("role", role);
-      if (response.data.user?._id) {
-        localStorage.setItem("userId", response.data.user._id);
-      }
+      setAuthSession({
+        token: response.data.token,
+        role,
+        userId: response.data.user?._id || response.data.user?.id,
+      });
 
       Swal.fire({
         toast: true,
