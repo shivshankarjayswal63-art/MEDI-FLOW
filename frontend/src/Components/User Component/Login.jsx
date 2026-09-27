@@ -33,19 +33,28 @@ function Login() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setError("");
   };
 
-  const validateForm = () => {
+  const readCredentials = (formEl) => {
+    const emailInput = formEl?.elements?.namedItem?.("email");
+    const passInput = formEl?.elements?.namedItem?.("password");
+    const email = String(emailInput?.value ?? formData.email ?? "").trim();
+    const password = String(passInput?.value ?? formData.password ?? "").trim();
+    return { email, password };
+  };
+
+  const validateCredentials = ({ email, password }) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email) {
+    if (!email) {
       setError("Email is required");
       return false;
     }
-    if (!emailRegex.test(formData.email)) {
+    if (!emailRegex.test(email)) {
       setError("Invalid email format");
       return false;
     }
-    if (!formData.password) {
+    if (!password) {
       setError("Password is required");
       return false;
     }
@@ -56,18 +65,23 @@ function Login() {
     e.preventDefault();
     setError("");
 
-    if (!validateForm()) return;
+    const credentials = readCredentials(e.currentTarget);
+    setFormData(credentials);
+    if (!validateCredentials(credentials)) return;
+
+    const apiBase = import.meta.env.VITE_API_URL;
+    if (!apiBase) {
+      setError("App misconfigured: VITE_API_URL is missing. Set it in Vercel env and redeploy.");
+      return;
+    }
 
     setLoading(true);
     try {
-      const response = await axios.post(
-  `${import.meta.env.VITE_API_URL}/api/auth/login`,
-        formData
-      );
+      const response = await axios.post(`${apiBase}/api/auth/login`, credentials);
       const role =
         response.data.role ||
         response.data.user?.role ||
-        inferRoleFromEmail(formData.email);
+        inferRoleFromEmail(credentials.email);
       setAuthSession({
         token: response.data.token,
         role,
@@ -94,12 +108,15 @@ function Login() {
         navigate(routeForRole(role));
       }, 800);
     } catch (error) {
+      const msg =
+        error.response?.data?.message ||
+        (error.message === "Network Error"
+          ? "Cannot reach API. Check VITE_API_URL on Vercel and that medi-flow-api is running."
+          : "Login failed. Please check your credentials.");
       Swal.fire({
         icon: "error",
         title: "Login Failed",
-        text:
-          error.response?.data?.message ||
-          "Login failed. Please check your credentials.",
+        text: msg,
       });
     } finally {
       setLoading(false);
@@ -183,9 +200,12 @@ function Login() {
                   margin="normal"
                   label="Email"
                   name="email"
+                  type="email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="Enter your email"
+                  onInput={handleChange}
+                  placeholder="patient1@demo.com"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -200,8 +220,10 @@ function Login() {
                   label="Password"
                   name="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
+                  onInput={handleChange}
                   placeholder="Enter your password"
                   InputProps={{
                     startAdornment: (

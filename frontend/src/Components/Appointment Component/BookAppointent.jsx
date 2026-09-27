@@ -316,7 +316,7 @@ function BookAppointment() {
               {/* Buttons with hover effects */}
               <div className="flex flex-col justify-center gap-4 mb-6 sm:flex-row">
                 <button
-                  onClick={() => navigate("/Login")}
+                  onClick={() => navigate("/login")}
                   className="bg-gradient-to-r from-[#2b2c6c] to-[#3b3c8c] hover:from-[#3b3c8c] hover:to-[#2b2c6c] text-white py-3 px-6 text-base rounded-2xl transition-all duration-300 font-medium shadow-md hover:shadow-lg hover:translate-y-[-2px] flex items-center justify-center"
                 >
                   <UserCircle size={22} className="mr-2" />
