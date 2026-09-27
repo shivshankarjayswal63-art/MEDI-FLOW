@@ -1,7 +1,7 @@
 import React, { useState, lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import RoleGuard from "./components/RoleGuard";
-import DashboardRedirect from "./components/DashboardRedirect";
+import RoleGuard from "./Components/RoleGuard";
+import DashboardRedirect from "./Components/DashboardRedirect";
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Box, CircularProgress } from "@mui/material";
