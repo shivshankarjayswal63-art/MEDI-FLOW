@@ -22,6 +22,7 @@ import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import MinimizeIcon from "@mui/icons-material/Minimize";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
+import { sendMedicalAssistantMessage } from "../../utils/medicalAssistantApi";
 
 const HealthChatBot = ({ open, onClose }) => {
   const [messages, setMessages] = useState([
@@ -64,7 +65,15 @@ const HealthChatBot = ({ open, onClose }) => {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { sender: "user", text: input };
+    const text = input.trim();
+    const userMessage = { sender: "user", text };
+    const history = messages
+      .filter((m) => !m.temp && (m.sender === "user" || m.sender === "bot"))
+      .map((m) => ({
+        role: m.sender === "user" ? "user" : "assistant",
+        content: m.text,
+      }));
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
@@ -73,36 +82,14 @@ const HealthChatBot = ({ open, onClose }) => {
     setMessages((prev) => [...prev, { sender: "bot", text: "Typing...", temp: true }]);
 
     try {
-      // Store token in case we need it for authenticated API calls
-      const token = localStorage.getItem("token");
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-      const res = await fetch("http://localhost:8000/api/chat/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: JSON.stringify({ message: input }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      
-      if (!res.ok) {
-        throw new Error(`Server responded with ${res.status}`);
-      }
-      
-      const data = await res.json();
+      const data = await sendMedicalAssistantMessage(text, history);
 
       // Remove typing placeholder
       setMessages((prev) => prev.filter((msg) => !msg.temp));
 
-      const botReply = data.response || "Sorry, I couldn't understand that.";
+      const botReply = data.reply || data.response || "Sorry, I couldn't understand that.";
       
-      // Store prediction in localStorage if it contains a prediction
-      if (botReply.includes("suggests:")) {
+      if (data.primaryCondition) {
         localStorage.setItem("lastPrediction", botReply);
       }
       
@@ -110,10 +97,14 @@ const HealthChatBot = ({ open, onClose }) => {
 
       if (!open) setHasUnread(true);
 
-      // Suggest action options for high risk scenarios
-      if (botReply.toLowerCase().includes("high risk") || 
-          botReply.toLowerCase().includes("critical") ||
-          botReply.toLowerCase().includes("elevated risk")) {
+      const urgent =
+        data.urgent ||
+        botReply.toLowerCase().includes("high risk") ||
+        botReply.toLowerCase().includes("critical") ||
+        botReply.toLowerCase().includes("elevated risk") ||
+        botReply.toLowerCase().includes("emergency");
+
+      if (urgent) {
         setTimeout(() => {
           setMessages((prev) => [
             ...prev,
@@ -137,8 +128,8 @@ const HealthChatBot = ({ open, onClose }) => {
         {
           sender: "bot",
           text: isTimeout
-            ? "AI server is not running. Start it on port 8000 (BACKEND/ai-model) or use Symptom Analysis in the menu."
-            : "Error connecting to the server. Please try again later.",
+            ? "The assistant took too long. Open Medical assistant from the patient menu or try Symptom AI."
+            : "Error connecting to the server. Check VITE_API_URL and try again.",
         },
       ]);
       
@@ -165,7 +156,10 @@ const HealthChatBot = ({ open, onClose }) => {
       } else if (option === "View health trends") {
         setMessages((prev) => [
           ...prev,
-          { sender: "bot", text: "Here's a summary of your recent health metrics. Your blood pressure has been slightly elevated compared to last month. Would you like more details?" }
+          {
+            sender: "bot",
+            text: "Open Health trends in the patient menu to see your vitals chart, or use Medical assistant for symptom questions.",
+          },
         ]);
       }
     }, 1000);

@@ -1,0 +1,39 @@
+const getApiBase = () => import.meta.env.VITE_API_URL || "";
+
+/**
+ * @param {string} message
+ * @param {{ role: string, content: string }[]} history
+ */
+export async function sendMedicalAssistantMessage(message, history = []) {
+  const api = getApiBase();
+  if (!api) {
+    throw new Error("VITE_API_URL is not configured");
+  }
+
+  const token = localStorage.getItem("token");
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+  try {
+    const res = await fetch(`${api}/api/medical-assistant/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ message, history }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.message || `Server responded with ${res.status}`);
+    }
+
+    return res.json();
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}

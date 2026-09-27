@@ -10,6 +10,7 @@ import {
   LineChart,
   History,
   UserCircle,
+  MessageCircle,
 } from "lucide-react";
 import DashboardShell from "../DashboardShell";
 
@@ -20,6 +21,7 @@ const menuItems = [
   { name: "Request consultation", icon: <FileText size={20} />, path: "/request-consultation" },
   { name: "Lab results", icon: <FileText size={20} />, path: "/online-results" },
   { name: "Symptom AI", icon: <Brain size={20} />, path: "/symptom-analysis" },
+  { name: "Medical assistant", icon: <MessageCircle size={20} />, path: "/medical-assistant" },
   { name: "Analysis history", icon: <History size={20} />, path: "/analysis-history" },
   { name: "Vitals", icon: <Activity size={20} />, path: "/enter-vitals" },
   { name: "Health trends", icon: <LineChart size={20} />, path: "/health-trends" },

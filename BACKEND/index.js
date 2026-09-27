@@ -98,6 +98,7 @@ app.use("/api/vitals", vitalsRoutes);
 const medicalReportRoutes = require("./Routes/medicalReportRoutes");
 app.use("/api/reports", medicalReportRoutes);
 app.use("/api/dashboard", require("./Routes/DashboardRoutes"));
+app.use("/api/medical-assistant", require("./Routes/medicalAssistantRoutes"));
 app.use("/api/notifications", require("./Routes/NotificationRoutes"));
 app.use("/api/search", require("./Routes/SearchRoutes"));
 

@@ -18,6 +18,15 @@ Copy values from your local `BACKEND/.env` (never commit `.env`).
 
 Optional: `AI_API_URL`, `EMAIL_USER`, `EMAIL_PASS`, `DATABASE_URL` (for migrations only).
 
+### Medical assistant (NVIDIA Nemotron)
+
+| Variable | Purpose |
+|----------|---------|
+| `NVIDIA_API_KEY` | From [build.nvidia.com](https://build.nvidia.com) (`nvapi-…`). **Backend only** — never expose in the frontend. |
+| `NVIDIA_NEMOTRON_MODEL` | Default `nvidia/nemotron-3-ultra-550b-a55b` if unset |
+
+Without `NVIDIA_API_KEY`, `/api/medical-assistant/chat` still works using the built-in symptom screening + FAQ replies.
+
 ---
 
 ## Common Vercel mistake

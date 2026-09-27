@@ -30,7 +30,7 @@ const ChatbotLauncher = ({ onOpen }) => {
     <div className="fixed z-50 flex flex-col items-end bottom-5 right-5">
       {showHint && (
         <div className="bg-white text-blue-600 p-3 rounded-lg shadow-lg mb-2 max-w-[200px] text-sm animate-fadeIn">
-          Ask me about heart attack symptoms or gastritis treatments!
+          Ask about symptoms, diseases, or when to see a doctor!
         </div>
       )}
       

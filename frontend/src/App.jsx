@@ -62,6 +62,7 @@ const HealthTrends = lazy(() => import("./Components/Novelty Component/HealthTre
 const VitalsInputForm = lazy(() => import("./Components/Novelty Component/VitalsInputForm"));
 const ChatbotLauncher = lazy(() => import("./Components/Novelty Component/ChatbotLauncher"));
 const HealthChatBot = lazy(() => import("./Components/Novelty Component/HealthChatBot"));
+const MedicalAssistantChat = lazy(() => import("./Components/Novelty Component/MedicalAssistantChat"));
 
 function App() {
   const [chatOpen, setChatOpen] = useState(false);
@@ -84,6 +85,7 @@ function App() {
     "/patient-dashboard",
     "/analysis-history",
     "/symptom-analysis",
+    "/medical-assistant",
     "/enter-vitals",
     "/health-trends",
     "/online-results",
@@ -113,6 +115,7 @@ function App() {
             <Route path="/patient-dashboard" element={<PatientDashboard />} />
             <Route path="/online-results" element={<OnlineResults />} />
             <Route path="/symptom-analysis" element={<NoveltyComponent />} />
+            <Route path="/medical-assistant" element={<MedicalAssistantChat />} />
             <Route path="/enter-vitals" element={<VitalsInputForm />} />
             <Route path="/analysis-history" element={<AnalysisHistory />} />
             <Route path="/health-trends" element={<HealthTrends />} />

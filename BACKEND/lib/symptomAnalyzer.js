@@ -196,4 +196,4 @@ function analyzeSymptoms(symptomList) {
   };
 }
 
-module.exports = { analyzeSymptoms, normalizeSymptom };
+module.exports = { analyzeSymptoms, normalizeSymptom, CONDITION_PROFILES };
