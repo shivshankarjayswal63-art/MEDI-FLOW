@@ -3,8 +3,13 @@
 ## Frontend (recommended)
 
 1. Import the GitHub repo in [Vercel](https://vercel.com).
-2. **Root Directory**: leave empty (repo root) **or** set to `frontend` (both work; root uses `vercel.json` at repo root).
-3. **Framework Preset**: Vite (auto-detected if root is `frontend`).
+2. **Root Directory**: set to **`frontend`** (not `BACKEND`, not `BACKEND/ai-model`).
+3. **Framework Preset**: Vite.
+4. **Build & Development Settings** → if you see overrides, set:
+   - Install Command: `npm install` (or leave empty to use `frontend/vercel.json`)
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - **Remove** any `npm install --prefix frontend` override (that breaks when Root Directory is wrong).
 4. **Environment variables** (Project → Settings → Environment Variables):
 
    | Name | Example |

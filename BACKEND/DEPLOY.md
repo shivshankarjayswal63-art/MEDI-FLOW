@@ -20,6 +20,12 @@ Optional: `AI_API_URL`, `EMAIL_USER`, `EMAIL_PASS`, `DATABASE_URL` (for migratio
 
 ---
 
+## Common Vercel mistake
+
+If build looks for `BACKEND/ai-model/frontend/package.json`, the **frontend** project’s **Root Directory** is wrong. Set it to **`frontend`** only. The **API** project must use Root Directory **`BACKEND`** only.
+
+---
+
 ## Option A — Vercel (second project, same GitHub repo)
 
 1. Go to [vercel.com/new](https://vercel.com/new) → import **MEDI-FLOW** repo again (second project).
