@@ -42,3 +42,26 @@ export async function sendMedicalAssistantMessage(message, history = []) {
     throw err;
   }
 }
+
+export async function bookMedicalAssistantSlot({ doctorId, doctorName, specialization, date, time }) {
+  const api = getApiBase();
+  if (!api) throw new Error("VITE_API_URL is not configured");
+
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Sign in to book an appointment.");
+
+  const res = await fetch(`${api}/api/medical-assistant/book`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ doctorId, doctorName, specialization, date, time }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.message || `Booking failed (${res.status})`);
+  }
+  return res.json();
+}

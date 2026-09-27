@@ -96,6 +96,8 @@ npm run admin:ensure
 
 Log in on the site at **/login** — you should land on **/User-Dashboard**.
 
+**Medical assistant booking:** patient must be logged in; chat uses `POST /api/medical-assistant/book` with JWT.
+
 ---
 
 ## Option B — Render (good for long-running Express)

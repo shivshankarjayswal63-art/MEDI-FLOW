@@ -19,28 +19,28 @@ import SendIcon from "@mui/icons-material/Send";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import TipsAndUpdatesOutlinedIcon from "@mui/icons-material/TipsAndUpdatesOutlined";
 import { brand } from "../../theme/brand";
-import { pageContainerSx } from "../../theme/responsive";
-import { sendMedicalAssistantMessage } from "../../utils/medicalAssistantApi";
+import { useTypewriter } from "../../hooks/useTypewriter";
+import { sendMedicalAssistantMessage, bookMedicalAssistantSlot } from "../../utils/medicalAssistantApi";
 import { getMedicalQuestionSuggestions } from "../../utils/medicalChatSuggestions";
 
 const INITIAL_MESSAGES = [
   {
     role: "assistant",
     content:
-      "Hello! I answer **health and medical questions only** — symptoms, conditions, and when to get care. What would you like to know?",
+      "Hello! I answer **health questions only**. When signed in, I can use **your health record** and help **book appointments**. What would you like to know?",
+    animate: false,
   },
 ];
 
 function toHistory(messages) {
   return messages
     .filter((m) => m.role === "user" || m.role === "assistant")
-    .map((m) => ({ role: m.role, content: m.content }));
+    .map((m) => ({ role: m.role, content: m.fullContent || m.content }));
 }
 
-function renderMessageText(text, isUser) {
-  const parts = String(text).split(/(\*\*[^*]+\*\*)/g);
+function renderMessageText(text) {
+  const parts = String(text || "").split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
@@ -53,56 +53,150 @@ function renderMessageText(text, isUser) {
   });
 }
 
+function AssistantMessageBody({ message, isLatestAssistant }) {
+  const full = message.fullContent || message.content;
+  const shouldAnimate = isLatestAssistant && message.animate;
+  const { display, isTyping } = useTypewriter(full, shouldAnimate);
+
+  return (
+    <>
+      <Typography
+        variant="body2"
+        component="div"
+        sx={{
+          fontSize: { xs: "0.875rem", sm: "0.9375rem" },
+          lineHeight: 1.55,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        }}
+      >
+        {renderMessageText(shouldAnimate ? display : full)}
+        {isTyping && (
+          <Box
+            component="span"
+            sx={{
+              display: "inline-block",
+              width: 6,
+              height: 14,
+              ml: 0.5,
+              bgcolor: brand.success,
+              animation: "blink 1s step-end infinite",
+              "@keyframes blink": { "50%": { opacity: 0 } },
+            }}
+          />
+        )}
+      </Typography>
+      {message.meta?.source && (
+        <Chip
+          size="small"
+          label={message.meta.source === "nemotron" ? "AI · medical mode" : "Screening engine"}
+          sx={{
+            mt: 1,
+            height: 22,
+            fontSize: "0.65rem",
+            bgcolor: alpha(brand.success, 0.12),
+            color: brand.success,
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 export default function MedicalAssistantChat() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [booking, setBooking] = useState(false);
   const [urgent, setUrgent] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
 
+  const trimmedInput = input.trim();
   const suggestions = useMemo(() => getMedicalQuestionSuggestions(input), [input]);
-  const showSuggestions = !loading;
+  const showSuggestions = !loading && trimmedInput.length >= 2;
+
+  const lastAssistantIndex = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") return i;
+    }
+    return -1;
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, booking]);
+
+  const pushAssistant = (content, meta, actions = []) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content,
+        fullContent: content,
+        animate: true,
+        meta,
+        actions: actions || [],
+      },
+    ]);
+  };
 
   const sendMessage = async (text) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
 
     setError("");
-    const userMsg = { role: "user", content: trimmed };
-    const historyBefore = toHistory(messages);
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev.map((m) => ({ ...m, animate: false })), { role: "user", content: trimmed }]);
     setInput("");
     setLoading(true);
 
     try {
+      const historyBefore = toHistory(messages);
       const data = await sendMedicalAssistantMessage(trimmed, historyBefore);
       const reply = data.reply || data.response || "Sorry, I could not generate a reply.";
       setUrgent(Boolean(data.urgent));
-      setMessages((prev) => [...prev, { role: "assistant", content: reply, meta: data }]);
+      pushAssistant(reply, data, data.actions || []);
     } catch (err) {
       const isTimeout = err.name === "AbortError";
       setError(
         isTimeout
-          ? "Request timed out. Try a shorter question or tap a suggested question below."
+          ? "Request timed out. Try a shorter question."
           : err.message || "Could not reach the server."
       );
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "Connection issue — please try again. You can also use **Symptom AI** for a structured check from the menu.",
-        },
-      ]);
+      pushAssistant(
+        "Connection issue — please try again. You can also use **Symptom AI** from the menu.",
+        { source: "rules" },
+        []
+      );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSlotBook = async (action, slot) => {
+    if (booking) return;
+    setBooking(true);
+    setError("");
+    try {
+      const result = await bookMedicalAssistantSlot({
+        doctorId: action.doctorId,
+        doctorName: action.doctorName,
+        specialization: action.specialization,
+        date: slot.date,
+        time: slot.time,
+      });
+      pushAssistant(
+        result.reply ||
+          `Booked **${action.doctorName}** on **${slot.date}** at **${slot.time}**.`,
+        { source: "rules" },
+        []
+      );
+    } catch (err) {
+      setError(err.message || "Booking failed");
+    } finally {
+      setBooking(false);
     }
   };
 
@@ -116,13 +210,14 @@ export default function MedicalAssistantChat() {
   return (
     <Box
       sx={{
-        ...pageContainerSx,
         display: "flex",
         flexDirection: "column",
-        minHeight: { xs: "calc(100dvh - 120px)", md: "calc(100dvh - 140px)" },
-        maxWidth: 960,
-        mx: "auto",
         width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        mx: { xs: -1.5, sm: -2, md: -3 },
+        height: { xs: "calc(100dvh - 56px - 24px)", md: "calc(100dvh - 64px - 48px)" },
+        minHeight: 420,
       }}
     >
       <Paper
@@ -131,105 +226,93 @@ export default function MedicalAssistantChat() {
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          borderRadius: { xs: 2, md: 3 },
+          borderRadius: { xs: 2, md: 2.5 },
           overflow: "hidden",
           border: `1px solid ${alpha(brand.primary, 0.12)}`,
-          boxShadow: `0 12px 40px ${alpha(brand.primary, 0.08)}`,
+          boxShadow: `0 8px 32px ${alpha(brand.primary, 0.08)}`,
           minHeight: 0,
+          height: "100%",
         }}
       >
-        {/* Header */}
         <Box
           sx={{
             px: { xs: 2, sm: 2.5 },
-            py: { xs: 1.5, sm: 2 },
-            background: `linear-gradient(135deg, ${brand.primary} 0%, #3d3f9e 55%, ${brand.success} 120%)`,
+            py: { xs: 1.25, sm: 1.5 },
+            background: `linear-gradient(135deg, ${brand.primary} 0%, #3d3f9e 50%, ${brand.success} 110%)`,
             color: "#fff",
+            flexShrink: 0,
           }}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2,
-                bgcolor: alpha("#fff", 0.15),
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+          <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
               <LocalHospitalIcon />
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: { xs: "1.05rem", sm: "1.2rem" }, lineHeight: 1.2 }}>
-                Medical assistant
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.92, fontSize: { xs: "0.75rem", sm: "0.85rem" } }}>
-                Health questions only · Educational guidance
-              </Typography>
-            </Box>
+              <Box>
+                <Typography fontWeight={700} sx={{ fontSize: { xs: "1rem", md: "1.15rem" }, lineHeight: 1.2 }}>
+                  Medical assistant
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                  Health Q&A · your records · book visits
+                </Typography>
+              </Box>
+            </Stack>
+            <Stack direction="row" spacing={0.75} sx={{ display: { xs: "none", sm: "flex" } }}>
+              <Button
+                component={RouterLink}
+                to="/symptom-analysis"
+                size="small"
+                sx={{ color: "#fff", borderColor: alpha("#fff", 0.5), fontSize: "0.7rem" }}
+                variant="outlined"
+              >
+                Symptom AI
+              </Button>
+              <Button
+                component={RouterLink}
+                to="/Book-Appointment"
+                size="small"
+                sx={{ bgcolor: alpha("#fff", 0.2), color: "#fff", fontSize: "0.7rem" }}
+              >
+                Book
+              </Button>
+            </Stack>
           </Stack>
-          <Chip
-            size="small"
-            label={isMobile ? "Not medical advice" : "Educational only — not a diagnosis. Call emergency services if severe symptoms."}
-            sx={{
-              mt: 1.5,
-              bgcolor: alpha("#fff", 0.18),
-              color: "#fff",
-              fontSize: "0.7rem",
-              height: "auto",
-              py: 0.25,
-              "& .MuiChip-label": { whiteSpace: "normal", px: 1 },
-            }}
-          />
         </Box>
 
         {urgent && (
-          <Alert severity="error" sx={{ borderRadius: 0, py: 0.5 }}>
-            Urgent screening — seek emergency care if symptoms are severe or worsening.
+          <Alert severity="error" sx={{ borderRadius: 0, py: 0.25, flexShrink: 0 }}>
+            Urgent screening — seek emergency care if symptoms are severe.
           </Alert>
         )}
-
         {error && (
-          <Alert severity="warning" sx={{ borderRadius: 0, py: 0.5 }} onClose={() => setError("")}>
+          <Alert severity="warning" sx={{ borderRadius: 0, py: 0.25, flexShrink: 0 }} onClose={() => setError("")}>
             {error}
           </Alert>
         )}
 
-        {/* Messages */}
         <Box
           sx={{
             flex: 1,
+            minHeight: 0,
             overflowY: "auto",
-            px: { xs: 1.25, sm: 2 },
+            px: { xs: 1.5, sm: 2.5 },
             py: { xs: 1.5, sm: 2 },
-            bgcolor: alpha(brand.lightBg, 0.65),
-            backgroundImage: `radial-gradient(${alpha(brand.success, 0.06)} 1px, transparent 1px)`,
-            backgroundSize: "20px 20px",
+            bgcolor: alpha(brand.lightBg, 0.5),
           }}
         >
           {messages.map((msg, idx) => {
             const isUser = msg.role === "user";
+            const isLatestAssistant = !isUser && idx === lastAssistantIndex;
             return (
-              <Box
-                key={idx}
-                sx={{
-                  display: "flex",
-                  justifyContent: isUser ? "flex-end" : "flex-start",
-                  mb: 1.75,
-                }}
-              >
+              <Box key={idx} sx={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", mb: 1.75 }}>
                 <Stack
                   direction={isUser ? "row-reverse" : "row"}
                   spacing={1}
                   alignItems="flex-end"
-                  sx={{ maxWidth: { xs: "96%", sm: "88%" } }}
+                  sx={{ maxWidth: { xs: "98%", md: "85%" } }}
                 >
                   <Box
                     sx={{
-                      width: 36,
-                      height: 36,
+                      width: 34,
+                      height: 34,
                       borderRadius: "50%",
                       flexShrink: 0,
                       display: "flex",
@@ -237,111 +320,91 @@ export default function MedicalAssistantChat() {
                       justifyContent: "center",
                       bgcolor: isUser ? brand.primary : brand.success,
                       color: "#fff",
-                      boxShadow: `0 4px 12px ${alpha(isUser ? brand.primary : brand.success, 0.35)}`,
                     }}
                   >
                     {isUser ? <PersonOutlineIcon fontSize="small" /> : <SmartToyOutlinedIcon fontSize="small" />}
                   </Box>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      px: 1.75,
-                      py: 1.25,
-                      borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                      bgcolor: isUser ? brand.primary : "#fff",
-                      color: isUser ? "#fff" : "text.primary",
-                      border: isUser ? "none" : `1px solid ${alpha(brand.primary, 0.08)}`,
-                      boxShadow: isUser ? `0 6px 16px ${alpha(brand.primary, 0.25)}` : `0 4px 14px ${alpha("#000", 0.06)}`,
-                    }}
-                  >
-                    <Typography
-                      variant="body2"
-                      component="div"
+                  <Box sx={{ minWidth: 0 }}>
+                    <Paper
+                      elevation={0}
                       sx={{
-                        fontSize: { xs: "0.875rem", sm: "0.9375rem" },
-                        lineHeight: 1.55,
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
+                        px: 1.75,
+                        py: 1.25,
+                        borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                        bgcolor: isUser ? brand.primary : "#fff",
+                        color: isUser ? "#fff" : "text.primary",
+                        border: isUser ? "none" : `1px solid ${alpha(brand.primary, 0.08)}`,
                       }}
                     >
-                      {renderMessageText(msg.content, isUser)}
-                    </Typography>
-                    {msg.meta?.source && !isUser && (
-                      <Chip
-                        size="small"
-                        label={msg.meta.source === "nemotron" ? "AI · medical mode" : "Screening engine"}
-                        sx={{
-                          mt: 1,
-                          height: 22,
-                          fontSize: "0.65rem",
-                          bgcolor: alpha(brand.success, 0.12),
-                          color: brand.success,
-                        }}
-                      />
+                      {isUser ? (
+                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                          {msg.content}
+                        </Typography>
+                      ) : (
+                        <AssistantMessageBody message={msg} isLatestAssistant={isLatestAssistant} />
+                      )}
+                    </Paper>
+                    {!isUser && msg.actions?.length > 0 && (
+                      <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                        {msg.actions
+                          .filter((a) => a.type === "pick_slot")
+                          .flatMap((a) =>
+                            (a.slots || []).map((slot) => (
+                              <Chip
+                                key={`${a.doctorId}-${slot.date}-${slot.time}`}
+                                label={slot.label || `${slot.date} ${slot.time}`}
+                                onClick={() => handleSlotBook(a, slot)}
+                                disabled={booking}
+                                color="primary"
+                                variant="outlined"
+                                sx={{ height: "auto", py: 0.5, "& .MuiChip-label": { whiteSpace: "normal" } }}
+                              />
+                            ))
+                          )}
+                      </Box>
                     )}
-                  </Paper>
+                  </Box>
                 </Stack>
               </Box>
             );
           })}
-          {loading && (
+          {(loading || booking) && (
             <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 5, py: 0.5 }}>
               <CircularProgress size={18} sx={{ color: brand.success }} />
-              <Typography variant="body2" color="text.secondary">Analyzing your question…</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {booking ? "Booking…" : "Analyzing…"}
+              </Typography>
             </Stack>
           )}
           <div ref={bottomRef} />
         </Box>
 
-        {/* Composer */}
         <Box
           sx={{
+            flexShrink: 0,
             borderTop: `1px solid ${alpha(brand.primary, 0.1)}`,
             bgcolor: "#fff",
-            px: { xs: 1.25, sm: 2 },
+            px: { xs: 1.5, sm: 2 },
             py: { xs: 1.25, sm: 1.5 },
           }}
         >
           {showSuggestions && (
-            <Box sx={{ mb: 1.25 }}>
-              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75 }}>
-                <TipsAndUpdatesOutlinedIcon sx={{ fontSize: 18, color: brand.accent }} />
-                <Typography variant="caption" sx={{ fontWeight: 600, color: brand.gray, letterSpacing: 0.3 }}>
-                  {input.trim() ? "Suggested follow-up questions" : "Try asking"}
-                </Typography>
-              </Stack>
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 0.75,
-                  flexWrap: "wrap",
-                  maxHeight: { xs: 120, sm: 96 },
-                  overflowY: "auto",
-                }}
-              >
-                {suggestions.map((s) => (
-                  <Chip
-                    key={s}
-                    label={s}
-                    onClick={() => sendMessage(s)}
-                    disabled={loading}
-                    variant="outlined"
-                    sx={{
-                      height: "auto",
-                      py: 0.6,
-                      borderColor: alpha(brand.primary, 0.2),
-                      bgcolor: alpha(brand.lightBg, 0.8),
-                      "&:hover": { bgcolor: alpha(brand.success, 0.1), borderColor: brand.success },
-                      "& .MuiChip-label": {
-                        whiteSpace: "normal",
-                        textAlign: "left",
-                        fontSize: { xs: "0.72rem", sm: "0.8rem" },
-                        px: 1,
-                      },
-                    }}
-                  />
-                ))}
-              </Box>
+            <Box sx={{ mb: 1, display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+              {suggestions.map((s) => (
+                <Chip
+                  key={s}
+                  label={s}
+                  size="small"
+                  onClick={() => sendMessage(s)}
+                  variant="outlined"
+                  sx={{
+                    height: "auto",
+                    maxWidth: "100%",
+                    py: 0.4,
+                    "& .MuiChip-label": { whiteSpace: "normal", fontSize: "0.75rem" },
+                  }}
+                />
+              ))}
             </Box>
           )}
 
@@ -350,22 +413,17 @@ export default function MedicalAssistantChat() {
               fullWidth
               multiline
               maxRows={isMobile ? 3 : 4}
-              placeholder="Type a health question (symptoms, conditions, when to see a doctor)…"
+              placeholder="Ask a health question…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={loading}
+              disabled={loading || booking}
               size="small"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2.5,
-                  bgcolor: alpha(brand.lightBg, 0.5),
-                },
-              }}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2.5 } }}
             />
             <IconButton
               onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim()}
+              disabled={loading || booking || !trimmedInput}
               sx={{
                 width: 44,
                 height: 44,
@@ -373,34 +431,11 @@ export default function MedicalAssistantChat() {
                 bgcolor: brand.success,
                 color: "#fff",
                 "&:hover": { bgcolor: "#259a84" },
-                "&.Mui-disabled": { bgcolor: alpha(brand.gray, 0.3), color: "#fff" },
+                "&.Mui-disabled": { bgcolor: alpha(brand.gray, 0.3) },
               }}
             >
               <SendIcon fontSize="small" />
             </IconButton>
-          </Stack>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1.25 }}>
-            <Button
-              component={RouterLink}
-              to="/symptom-analysis"
-              size="small"
-              variant="outlined"
-              fullWidth={isMobile}
-              sx={{ borderColor: alpha(brand.primary, 0.35), color: brand.primary, borderRadius: 2 }}
-            >
-              Symptom AI (checklist)
-            </Button>
-            <Button
-              component={RouterLink}
-              to="/Book-Appointment"
-              size="small"
-              variant="contained"
-              fullWidth={isMobile}
-              sx={{ bgcolor: brand.primary, borderRadius: 2, "&:hover": { bgcolor: "#1f2058" } }}
-            >
-              Book appointment
-            </Button>
           </Stack>
         </Box>
       </Paper>

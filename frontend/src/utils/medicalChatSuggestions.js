@@ -106,12 +106,12 @@ function scorePrompt(prompt, query) {
 
 /**
  * @param {string} input - current text field value
- * @returns {string[]} up to 4 suggestions
+ * @returns {string[]} up to 3 suggestions (empty when input too short)
  */
 export function getMedicalQuestionSuggestions(input) {
   const query = (input || "").trim().toLowerCase();
-  if (!query) {
-    return DEFAULT_PROMPTS.slice(0, 5);
+  if (query.length < 2) {
+    return [];
   }
 
   const pool = [];
@@ -133,7 +133,7 @@ export function getMedicalQuestionSuggestions(input) {
     .map((p) => ({ p, s: scorePrompt(p, query) }))
     .sort((a, b) => b.s - a.s);
 
-  const top = ranked.filter((r) => r.s > 0).slice(0, 4).map((r) => r.p);
-  if (top.length >= 2) return top;
-  return ranked.slice(0, 4).map((r) => r.p);
+  const top = ranked.filter((r) => r.s > 0).slice(0, 3).map((r) => r.p);
+  if (top.length >= 1) return top;
+  return ranked.slice(0, 3).map((r) => r.p);
 }

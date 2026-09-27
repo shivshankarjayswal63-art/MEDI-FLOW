@@ -1,4 +1,9 @@
 const { analyzeSymptoms, normalizeSymptom, CONDITION_PROFILES } = require("./symptomAnalyzer");
+const {
+  detectHealthSummaryIntent,
+  buildHealthSummaryReply,
+} = require("./patientHealthContext");
+const { detectBookingIntent, handleBookingRequest } = require("./appointmentAssistant");
 
 const NVIDIA_BASE = "https://integrate.api.nvidia.com/v1/chat/completions";
 const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
@@ -207,6 +212,9 @@ const MEDICAL_HINTS = [
   "nutrition",
   "pregnant",
   "child fever",
+  "appointment",
+  "book",
+  "schedule",
 ];
 
 function isGreetingOnly(text) {
@@ -290,21 +298,26 @@ function buildRulesReply(message, analysis, info) {
   return parts.join("\n\n");
 }
 
-function buildSystemPrompt(context) {
+function buildSystemPrompt(context, patientContext) {
   return `You are MEDI FLOW Medical Assistant — a health educator inside a hospital patient portal.
 Rules:
 - ONLY discuss medicine, symptoms, diseases, prevention, when to seek care, and general wellness. If the user asks anything non-medical, politely refuse and invite a health question.
 - You do NOT diagnose, prescribe medications, or replace a licensed clinician.
 - Answer in clear, simple English with short paragraphs or bullet lists when helpful.
 - If urgent screening context is provided, emphasize emergency care when appropriate.
+- When patientHealthRecord is provided, personalize educational answers using ONLY that data — do not invent tests or diagnoses.
+- For booking, direct users to pick a slot in chat or use Book appointment in the menu.
 - Keep replies under about 200 words unless the user asks for detail.
 - End with a brief reminder to consult a healthcare professional for personal advice.
 
 Structured screening context (may be empty):
-${JSON.stringify(context)}`;
+${JSON.stringify(context)}
+
+Patient health record (may be empty):
+${JSON.stringify(patientContext || null)}`;
 }
 
-async function callNemotron(userMessage, history, context) {
+async function callNemotron(userMessage, history, context, patientContext) {
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) return null;
 
@@ -315,7 +328,7 @@ async function callNemotron(userMessage, history, context) {
     .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content).slice(0, 4000) }));
 
   const messages = [
-    { role: "system", content: buildSystemPrompt(context) },
+    { role: "system", content: buildSystemPrompt(context, patientContext) },
     ...trimmedHistory,
     { role: "user", content: userMessage },
   ];
@@ -359,26 +372,53 @@ async function callNemotron(userMessage, history, context) {
   }
 }
 
-async function processMedicalChat(message, history) {
+function baseResponse(extra) {
+  return {
+    urgent: false,
+    primaryCondition: null,
+    confidence: 0,
+    severity: "unknown",
+    rankings: [],
+    actions: [],
+    ...extra,
+  };
+}
+
+async function processMedicalChat(message, history, options = {}) {
+  const { patientContext = null, userId = null } = options;
+
   if (isGreetingOnly(message)) {
-    return {
+    const extra = patientContext?.profile?.name
+      ? ` I can also summarize **your health record** or help **book an appointment**.`
+      : "";
+    return baseResponse({
       reply:
-        "Hello! I'm your MEDI FLOW medical assistant. Ask about symptoms, conditions, or when to seek care — for example chest pain, fever, headaches, or what stroke warning signs look like.",
-      urgent: false,
-      primaryCondition: null,
-      confidence: 0,
+        `Hello! I'm your MEDI FLOW medical assistant. Ask about symptoms, conditions, or when to seek care.${extra}`,
       source: "rules",
-    };
+    });
+  }
+
+  if (detectBookingIntent(message)) {
+    const booking = await handleBookingRequest(message, userId);
+    return baseResponse({
+      reply: booking.reply,
+      actions: booking.actions || [],
+      source: booking.source || "rules",
+    });
   }
 
   if (isOffTopic(message)) {
-    return {
+    return baseResponse({
       reply: MEDICAL_ONLY_REFUSAL,
-      urgent: false,
-      primaryCondition: null,
-      confidence: 0,
       source: "rules",
-    };
+    });
+  }
+
+  if (detectHealthSummaryIntent(message)) {
+    return baseResponse({
+      reply: buildHealthSummaryReply(patientContext),
+      source: "rules",
+    });
   }
 
   const extracted = extractSymptomsFromText(message);
@@ -399,8 +439,13 @@ async function processMedicalChat(message, history) {
     conditionInfo: info ? { title: info.title, blurb: info.blurb } : null,
   };
 
-  const rulesReply = buildRulesReply(message, analysis, info);
-  let reply = await callNemotron(message, history, context);
+  let rulesReply = buildRulesReply(message, analysis, info);
+  if (patientContext && (analysis || info)) {
+    rulesReply +=
+      "\n\n*I can use your saved vitals and symptom history when signed in — ask “summarize my health history” for details.*";
+  }
+
+  let reply = await callNemotron(message, history, context, patientContext);
   let source = "nemotron";
 
   if (!reply) {
@@ -411,7 +456,7 @@ async function processMedicalChat(message, history) {
       "\n\n⚠️ Screening suggests urgent symptoms — seek emergency care if severe or worsening.";
   }
 
-  return {
+  return baseResponse({
     reply,
     response: reply,
     urgent: Boolean(analysis?.urgent),
@@ -420,7 +465,7 @@ async function processMedicalChat(message, history) {
     severity: analysis?.severity || "unknown",
     rankings: analysis?.rankings || [],
     source,
-  };
+  });
 }
 
 module.exports = { processMedicalChat, extractSymptomsFromText };
