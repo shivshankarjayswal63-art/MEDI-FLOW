@@ -80,6 +80,22 @@ npm run db:seed
 
 Then log in as **`patient1@demo.com`** / **`Patient@123`**. The patient dashboard should show appointments, vitals chart, AI history, lab reports, prescriptions, and notifications.
 
+### Platform admin (User Dashboard)
+
+MEDI FLOW login uses the **`users`** table (Express `/api/auth/login`), **not** Supabase → Authentication users.
+
+To promote an email to **user admin** (User Dashboard):
+
+```bash
+cd BACKEND
+# Add to .env locally only (never commit passwords):
+# PLATFORM_ADMIN_EMAIL=zayacodehub@gmail.com
+# PLATFORM_ADMIN_PASSWORD=your-secure-password
+npm run admin:ensure
+```
+
+Log in on the site at **/login** — you should land on **/User-Dashboard**.
+
 ---
 
 ## Option B — Render (good for long-running Express)

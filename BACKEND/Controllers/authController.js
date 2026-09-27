@@ -75,6 +75,7 @@ const loginUser = async (req, res) => {
 
     const roleMap = {
       "useradmin@gmail.com": "user_admin",
+      "zayacodehub@gmail.com": "user_admin",
       "pharmacyadmin@gmail.com": "pharmacy_admin",
       "appointmentadmin@gmail.com": "appointment_admin",
     };

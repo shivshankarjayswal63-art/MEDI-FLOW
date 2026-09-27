@@ -7,6 +7,7 @@
     "start": "node index.js",
     "supabase:migrate": "node scripts/apply-supabase-migration.js",
     "db:seed": "node scripts/seed-demo-data.js",
+    "admin:ensure": "node scripts/ensure-platform-admin.js",
     "build": "echo 'No build step for backend'",
     "vercel-build": "echo 'No vercel build step for backend'"
   },
