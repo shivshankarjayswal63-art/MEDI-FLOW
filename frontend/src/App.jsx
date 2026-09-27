@@ -87,6 +87,7 @@ function App() {
     "/enter-vitals",
     "/health-trends",
     "/online-results",
+    "/Find-Doctor",
   ];
   const showChatbot = !hideChatbotOn.includes(location.pathname);
 
@@ -98,7 +99,14 @@ function App() {
           <Route path="/About-Us" element={<AboutUs />} />
           <Route path="/Contact-Us" element={<ContactUs />} />
           <Route path="/Our-Facilities" element={<OurFacilities />} />
-          <Route path="/Find-Doctor" element={<FindADoctor />} />
+          <Route
+            path="/Find-Doctor"
+            element={
+              <PatientPortalOrPublic>
+                <FindADoctor />
+              </PatientPortalOrPublic>
+            }
+          />
           <Route path="/dashboard" element={<DashboardRedirect />} />
 
           <Route element={<PatientPortalWrapper />}>

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Nav from "../Nav Component/Nav";
+import { usePatientPortal } from "../Patient Component/PatientPortalContext";
 import axios from "axios";
 import { Box, Container, Grid, Card, CardContent, Typography, Chip, Button, TextField, Avatar } from "@mui/material";
 import { brand } from "../../theme/brand";
 import EmptyState from "../EmptyState";
 
 function FindADoctor() {
+  const inPortal = usePatientPortal();
   const [doctors, setDoctors] = useState([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -26,10 +28,8 @@ function FindADoctor() {
       d.specialization?.toLowerCase().includes(filter.toLowerCase())
   );
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f4f6fb] to-white">
-      <Nav />
-      <Container maxWidth="lg" sx={{ py: 6 }}>
+  const content = (
+      <Container maxWidth="lg" sx={{ py: inPortal ? 0 : 6 }}>
         <Typography variant="h4" fontWeight={700} sx={{ color: brand.primary, mb: 1 }}>
           Find a Doctor
         </Typography>
@@ -84,6 +84,13 @@ function FindADoctor() {
           </Grid>
         )}
       </Container>
+  );
+
+  if (inPortal) return content;
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#f4f6fb] to-white">
+      <Nav />
+      {content}
     </div>
   );
 }
