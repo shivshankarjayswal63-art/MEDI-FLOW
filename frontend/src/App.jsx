@@ -4,18 +4,7 @@ import RoleGuard from "./Components/RoleGuard";
 import DashboardRedirect from "./Components/DashboardRedirect";
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Box, CircularProgress } from "@mui/material";
-
-const PageLoader = () => (
-  <Box
-    display="flex"
-    justifyContent="center"
-    alignItems="center"
-    minHeight="40vh"
-  >
-    <CircularProgress sx={{ color: "#2b2c6c" }} />
-  </Box>
-);
+import { PageLoader } from "./Components/Loading/MediflowLoader";
 
 const Home = lazy(() => import("./Components/Main Component/Home"));
 const AboutUs = lazy(() => import("./Components/Main Component/AboutUs"));

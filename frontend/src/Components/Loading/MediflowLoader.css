@@ -1,0 +1,322 @@
+.mf-loader-root {
+  --mf-primary: #2b2c6c;
+  --mf-deep: #1a1b45;
+  --mf-accent: #2fb297;
+  --mf-glow: rgba(47, 178, 151, 0.45);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
+}
+
+.mf-loader-root--fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  min-height: 100dvh;
+  background: radial-gradient(ellipse 120% 80% at 50% 0%, #3d3f8a 0%, var(--mf-deep) 45%, #0f1028 100%);
+}
+
+.mf-loader-root--inline {
+  min-height: 50vh;
+  width: 100%;
+  background: linear-gradient(180deg, #f4f6fb 0%, #ffffff 100%);
+}
+
+.mf-loader-root--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(26, 27, 69, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.mf-loader-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.55;
+  animation: mf-orb-float 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.mf-loader-orb--1 {
+  width: 220px;
+  height: 220px;
+  background: var(--mf-accent);
+  top: 10%;
+  left: -8%;
+  animation-delay: 0s;
+}
+
+.mf-loader-orb--2 {
+  width: 180px;
+  height: 180px;
+  background: #e6317d;
+  bottom: 15%;
+  right: -5%;
+  animation-delay: -3s;
+  opacity: 0.35;
+}
+
+.mf-loader-orb--3 {
+  width: 140px;
+  height: 140px;
+  background: #6b7cff;
+  top: 55%;
+  left: 60%;
+  animation-delay: -5s;
+  opacity: 0.3;
+}
+
+@keyframes mf-orb-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(24px, -18px) scale(1.08);
+  }
+}
+
+.mf-loader-core {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.mf-loader-rings {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mf-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+
+.mf-loader-ring--outer {
+  border-top-color: var(--mf-accent);
+  border-right-color: rgba(47, 178, 151, 0.25);
+  animation: mf-spin 1.4s linear infinite;
+}
+
+.mf-loader-ring--mid {
+  inset: 10px;
+  border-bottom-color: rgba(255, 255, 255, 0.35);
+  border-left-color: rgba(255, 255, 255, 0.08);
+  animation: mf-spin 2s linear infinite reverse;
+}
+
+.mf-loader-ring--inner {
+  inset: 22px;
+  background: linear-gradient(145deg, rgba(47, 178, 151, 0.25), rgba(43, 44, 108, 0.6));
+  box-shadow: 0 0 32px var(--mf-glow), inset 0 0 20px rgba(255, 255, 255, 0.06);
+  animation: mf-pulse-core 2.2s ease-in-out infinite;
+}
+
+.mf-loader-shield {
+  position: relative;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  color: #fff;
+  filter: drop-shadow(0 0 8px var(--mf-glow));
+  animation: mf-shield-bob 2.2s ease-in-out infinite;
+}
+
+@keyframes mf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mf-pulse-core {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.92;
+  }
+}
+
+@keyframes mf-shield-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.mf-loader-ecg {
+  width: min(280px, 78vw);
+  height: 48px;
+  overflow: visible;
+}
+
+.mf-loader-ecg-line {
+  fill: none;
+  stroke: var(--mf-accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px var(--mf-glow));
+  stroke-dasharray: 320;
+  stroke-dashoffset: 320;
+  animation: mf-ecg-draw 1.8s ease-in-out infinite;
+}
+
+.mf-loader-root--inline .mf-loader-ecg-line {
+  stroke: var(--mf-primary);
+  filter: none;
+}
+
+@keyframes mf-ecg-draw {
+  0% {
+    stroke-dashoffset: 320;
+    opacity: 0.4;
+  }
+  40% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -320;
+    opacity: 0.4;
+  }
+}
+
+.mf-loader-brand {
+  text-align: center;
+}
+
+.mf-loader-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #fff 0%, var(--mf-accent) 50%, #fff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: mf-shimmer 2.5s linear infinite;
+}
+
+.mf-loader-root--inline .mf-loader-title {
+  background: linear-gradient(90deg, var(--mf-primary) 0%, var(--mf-accent) 50%, var(--mf-primary) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@keyframes mf-shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.mf-loader-message {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.04em;
+}
+
+.mf-loader-root--inline .mf-loader-message {
+  color: #71717d;
+}
+
+.mf-loader-bar {
+  width: min(200px, 55vw);
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.mf-loader-root--inline .mf-loader-bar {
+  background: rgba(43, 44, 108, 0.12);
+}
+
+.mf-loader-bar-fill {
+  height: 100%;
+  width: 40%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--mf-accent), transparent);
+  animation: mf-bar-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes mf-bar-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.mf-loader-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 0.5rem;
+}
+
+.mf-loader-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mf-accent);
+  animation: mf-dot-bounce 1.2s ease-in-out infinite;
+}
+
+.mf-loader-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.mf-loader-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes mf-dot-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.65);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.mf-loader-exit {
+  animation: mf-fade-out 0.45s ease forwards;
+}
+
+@keyframes mf-fade-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}

@@ -32,8 +32,44 @@
       var Alert = ReactBootstrap.Alert;
     </script>
     <title>MEDI FLOW</title>
+    <style>
+      #mf-html-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        background: radial-gradient(ellipse at 50% 0%, #3d3f8a, #1a1b45 50%, #0f1028);
+        color: #fff;
+        font-family: system-ui, sans-serif;
+      }
+      #mf-html-splash .mf-splash-pulse {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 2px solid rgba(47, 178, 151, 0.35);
+        border-top-color: #2fb297;
+        animation: mf-splash-spin 0.9s linear infinite;
+      }
+      #mf-html-splash strong {
+        letter-spacing: 0.14em;
+        font-size: 1.1rem;
+      }
+      @keyframes mf-splash-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="mf-html-splash" aria-hidden="true">
+      <div class="mf-splash-pulse"></div>
+      <strong>MEDI FLOW</strong>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
