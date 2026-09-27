@@ -1,0 +1,20 @@
+# Optional: Render Blueprint — set env vars in Render dashboard after create
+services:
+  - type: web
+    name: medi-flow-api
+    runtime: node
+    rootDir: BACKEND
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/doctor/public
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND01
+        value: https://medi-flow-ten-theta.vercel.app

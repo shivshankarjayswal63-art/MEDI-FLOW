@@ -17,11 +17,15 @@
 
 The API does **not** run on the same static frontend deployment. Host `BACKEND/` on Render, Railway, or a separate Vercel project (see below).
 
-## Backend (optional second Vercel project)
+## Backend (second Vercel project — required for login/API)
 
-1. New Vercel project, **Root Directory**: `BACKEND`.
-2. Set env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `FRONTEND01` = your Vercel frontend URL (e.g. `https://medi-flow.vercel.app`).
-3. Use `BACKEND/vercel.json` (serverless Express).
+Full steps: **[BACKEND/DEPLOY.md](./BACKEND/DEPLOY.md)**
+
+Quick version:
+
+1. **New** Vercel project → same repo → **Root Directory = `BACKEND`**.
+2. Env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`, `FRONTEND01=https://medi-flow-ten-theta.vercel.app`
+3. Deploy → copy backend URL → set **`VITE_API_URL`** on the **frontend** project → **Redeploy frontend**.
 
 ## Local check before push
 
