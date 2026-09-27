@@ -25,6 +25,8 @@ const FindADoctor = lazy(() => import("./Components/Doctor Component/FindADoctor
 const PatientDashboard = lazy(() => import("./Components/Patient Component/PatientDashboard"));
 const OnlineResults = lazy(() => import("./Components/Patient Component/OnlineResults"));
 const RequestConsultation = lazy(() => import("./Components/Patient Component/RequestConsultation"));
+const PatientPortalWrapper = lazy(() => import("./Components/Patient Component/PatientPortalWrapper"));
+const PatientPortalOrPublic = lazy(() => import("./Components/Patient Component/PatientPortalOrPublic"));
 
 const UserManagement = lazy(() => import("./Components/User Component/UserAdmin/UserManagement"));
 const MyAccount = lazy(() => import("./Components/User Component/UserProfile/MyAccount"));
@@ -79,6 +81,12 @@ function App() {
     "/Doctor-Dashboard",
     "/Appointment-Dashboard",
     "/User-Dashboard",
+    "/patient-dashboard",
+    "/analysis-history",
+    "/symptom-analysis",
+    "/enter-vitals",
+    "/health-trends",
+    "/online-results",
   ];
   const showChatbot = !hideChatbotOn.includes(location.pathname);
 
@@ -92,23 +100,40 @@ function App() {
           <Route path="/Our-Facilities" element={<OurFacilities />} />
           <Route path="/Find-Doctor" element={<FindADoctor />} />
           <Route path="/dashboard" element={<DashboardRedirect />} />
+
+          <Route element={<PatientPortalWrapper />}>
+            <Route path="/patient-dashboard" element={<PatientDashboard />} />
+            <Route path="/online-results" element={<OnlineResults />} />
+            <Route path="/symptom-analysis" element={<NoveltyComponent />} />
+            <Route path="/enter-vitals" element={<VitalsInputForm />} />
+            <Route path="/analysis-history" element={<AnalysisHistory />} />
+            <Route path="/health-trends" element={<HealthTrends />} />
+          </Route>
+
           <Route
-            path="/patient-dashboard"
+            path="/Book-Appointment"
             element={
-              <RoleGuard allowedRoles={["patient"]}>
-                <PatientDashboard />
-              </RoleGuard>
+              <PatientPortalOrPublic>
+                <BookAppointent />
+              </PatientPortalOrPublic>
             }
           />
           <Route
-            path="/online-results"
+            path="/request-consultation"
             element={
-              <RoleGuard allowedRoles={["patient"]}>
-                <OnlineResults />
-              </RoleGuard>
+              <PatientPortalOrPublic>
+                <RequestConsultation />
+              </PatientPortalOrPublic>
             }
           />
-          <Route path="/request-consultation" element={<RequestConsultation />} />
+          <Route
+            path="/User-Account"
+            element={
+              <PatientPortalOrPublic>
+                <MyAccount />
+              </PatientPortalOrPublic>
+            }
+          />
 
           <Route
             path="/User-Management"
@@ -129,7 +154,6 @@ function App() {
               </RoleGuard>
             }
           />
-          <Route path="/User-Account" element={<MyAccount />} />
           <Route
             path="/Add-New-Patient"
             element={
@@ -138,11 +162,6 @@ function App() {
               </RoleGuard>
             }
           />
-
-          <Route path="/symptom-analysis" element={<NoveltyComponent />} />
-          <Route path="/enter-vitals" element={<VitalsInputForm />} />
-          <Route path="/analysis-history" element={<AnalysisHistory />} />
-          <Route path="/health-trends" element={<HealthTrends />} />
 
           <Route
             path="/Pharmacy-Dashboard"
@@ -221,7 +240,6 @@ function App() {
             }
           />
 
-          <Route path="/Book-Appointment" element={<BookAppointent />} />
           <Route path="/Appoinment-Display" element={<AppoinmentDisplay />} />
           <Route
             path="/Appointment-Dashboard"

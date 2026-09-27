@@ -11,8 +11,6 @@ import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import DownloadIcon from "@mui/icons-material/Download";
-import { Link } from "react-router-dom";
-
 function AnalysisHistory() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +27,7 @@ function AnalysisHistory() {
           },
         });
         const data = await res.json();
-        setRecords(data);
+        setRecords(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching analysis history:", err);
       } finally {
@@ -70,83 +68,7 @@ function AnalysisHistory() {
   const totalPages = Math.ceil(records.length / recordsPerPage);
 
   return (
-    <div className="min-h-screen p-8 bg-white">
-      {/* Navigation Bar - Matching the style from your image */}
-      <div className="fixed top-0 left-0 right-0 z-50">
-        <div className="flex">
-          <div className="w-3/4 bg-[#2b2c6c] flex items-center h-[50px]">
-            <Link
-              to="/Find-doctor"
-              className="ml-[110px] text-white text-xl font-semibold relative group hover:text-[#28b6a2] transition-colors duration-300 cursor-pointer"
-            >
-              FIND A DOCTOR
-              <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-[#28b6a2] transition-all duration-300 group-hover:w-full" />
-            </Link>
-
-            <Link
-              to="/online-results"
-              className="ml-[180px] text-white text-xl font-semibold relative group hover:text-[#28b6a2] transition-colors duration-300 cursor-pointer"
-            >
-              ONLINE RESULTS
-              <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-[#28b6a2] transition-all duration-300 group-hover:w-full" />
-            </Link>
-
-            <Link
-              to="/Book-Appointment"
-              className="ml-[180px] text-white text-xl font-semibold relative group hover:text-[#28b6a2] transition-colors duration-300 cursor-pointer"
-            >
-              BOOK AN APPOINTMENT
-              <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-[#28b6a2] transition-all duration-300 group-hover:w-full" />
-            </Link>
-          </div>
-
-          <div className="w-1/4 bg-[#2FB297] flex items-center justify-center h-[50px]">
-            <Link
-              to="/request-consultation"
-              className="relative px-4 py-2 text-xl font-semibold text-white transition-all duration-300 cursor-pointer hover:text-white hover:brightness-110"
-            >
-              REQUEST A CONSULTATION
-            </Link>
-          </div>
-        </div>
-
-        {/* Logo and Main Menu */}
-        <div className="bg-white shadow-md h-[70px] flex items-center">
-          <div className="flex items-center ml-[60px]">
-            <Link to="/" className="flex items-center cursor-pointer">
-              <img src="/Logo.png" alt="Logo" className="h-[60px]" />
-              <div className="text-[#2b2c6c] ml-2 font-bold text-lg">
-                MEDI FLOW
-                <div className="text-xs">HEALTH AND WELLNESS CARE</div>
-              </div>
-            </Link>
-          </div>
-
-          <div className="ml-auto mr-[50px] flex space-x-10 font-semibold">
-            {[
-              { name: "Home", path: "/" },
-              { name: "Contact Us", path: "/Contact-Us" },
-              { name: "Our Facilities", path: "/Our-Facilities" },
-              { name: "About Us", path: "/About-Us" },
-              { name: "My Account", path: "/User-Account" }
-            ].map((link, index) => (
-              <Link
-                key={index}
-                to={link.path}
-                className="relative py-2 text-black hover:text-[#e6317d] after:absolute after:left-0 after:bottom-0 after:h-0.5 after:w-0 after:bg-[#e6317d] after:transition-all after:duration-300 hover:after:w-full cursor-pointer"
-              >
-                {link.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Spacer for fixed navbar */}
-      <div className="h-[130px]"></div>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto mt-10">
+    <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <TimelineIcon style={{ color: "#e6317d", fontSize: 32, marginRight: 12 }} />
@@ -292,7 +214,6 @@ function AnalysisHistory() {
             )}
           </>
         )}
-      </div>
     </div>
   );
 }

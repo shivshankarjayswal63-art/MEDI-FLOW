@@ -30,7 +30,6 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import DownloadIcon from "@mui/icons-material/Download";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import Nav from "../Nav Component/Nav";
 
 // Register Chart.js components
 ChartJS.register(
@@ -231,9 +230,7 @@ function HealthTrends() {
   );
 
   return (
-    <>
-      <Nav />
-      <Container maxWidth="xl" className="py-6">
+    <Container maxWidth="xl" className="py-2">
         <Paper
           elevation={0}
           sx={{
@@ -441,7 +438,6 @@ function HealthTrends() {
           )}
         </Paper>
       </Container>
-    </>
   );
 }
 

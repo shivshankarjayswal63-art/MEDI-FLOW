@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import Nav from "../Nav Component/Nav";
+import { usePatientPortal } from "./PatientPortalContext";
 import axios from "axios";
 import { Container, Typography, TextField, Button, Alert, MenuItem } from "@mui/material";
 import { brand } from "../../theme/brand";
 
 function RequestConsultation() {
+  const inPortal = usePatientPortal();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -51,10 +53,8 @@ function RequestConsultation() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#f4f6fb]">
-      <Nav />
-      <Container maxWidth="sm" sx={{ py: 4 }}>
+  const inner = (
+      <Container maxWidth="sm" sx={{ py: inPortal ? 0 : 4 }}>
         <Typography variant="h4" fontWeight={700} sx={{ color: brand.primary, mb: 2 }}>
           Request a Consultation
         </Typography>
@@ -85,6 +85,13 @@ function RequestConsultation() {
           </Button>
         </form>
       </Container>
+  );
+
+  if (inPortal) return inner;
+  return (
+    <div className="min-h-screen bg-[#f4f6fb]">
+      <Nav />
+      {inner}
     </div>
   );
 }

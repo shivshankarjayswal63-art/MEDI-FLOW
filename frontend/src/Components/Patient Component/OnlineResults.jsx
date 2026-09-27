@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PatientLayout from "./PatientLayout";
 import axios from "axios";
 import { Typography, Card, CardContent, Button, Link as MuiLink } from "@mui/material";
 import { brand } from "../../theme/brand";
@@ -25,7 +24,7 @@ function OnlineResults() {
   }, [navigate]);
 
   return (
-    <PatientLayout>
+    <>
       <Typography variant="h4" fontWeight={700} sx={{ color: brand.primary, mb: 3 }}>
         Online Results
       </Typography>
@@ -53,7 +52,7 @@ function OnlineResults() {
       <Button sx={{ mt: 2 }} onClick={() => navigate("/patient-dashboard")}>
         Back to dashboard
       </Button>
-    </PatientLayout>
+    </>
   );
 }
 

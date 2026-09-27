@@ -4,12 +4,11 @@ import axios from "axios";
 import { Grid, Card, CardContent, Typography, Button, Chip, Box } from "@mui/material";
 import { brand } from "../../theme/brand";
 import EmptyState from "../EmptyState";
-import PatientLayout from "./PatientLayout";
-
 const quickLinks = [
   { label: "Find a doctor", path: "/Find-Doctor", color: brand.primary },
   { label: "Book appointment", path: "/Book-Appointment", color: brand.success },
   { label: "Symptom AI", path: "/symptom-analysis", color: brand.accent },
+  { label: "Analysis history", path: "/analysis-history", color: brand.accent },
   { label: "Lab results", path: "/online-results", color: brand.primary },
 ];
 
@@ -48,7 +47,7 @@ function PatientDashboard() {
   }, [navigate]);
 
   return (
-    <PatientLayout>
+    <>
       <Typography variant="h4" fontWeight={700} sx={{ color: brand.primary, mb: 0.5 }}>
         {userName ? `Welcome, ${userName}` : "My Health Hub"}
       </Typography>
@@ -122,7 +121,7 @@ function PatientDashboard() {
           </Card>
         </Grid>
       </Grid>
-    </PatientLayout>
+    </>
   );
 }
 

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Nav from "../../Nav Component/Nav";
+import { usePatientPortal } from "../../Patient Component/PatientPortalContext";
 import PatientProfile from "./PatientProfile";
 import { CircularProgress, Box } from "@mui/material";
 
 function MyAccount() {
+  const inPortal = usePatientPortal();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ function MyAccount() {
 
   return (
     <div>
-      <Nav />
+      {!inPortal && <Nav />}
       <PatientProfile />
     </div>
   );

@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import CircularProgress from "@mui/material/CircularProgress";
+import { usePatientPortal } from "../Patient Component/PatientPortalContext";
 
 // Error Boundary Component
 class ErrorBoundary extends Component {
@@ -56,6 +57,7 @@ class ErrorBoundary extends Component {
 }
 
 function BookAppointment() {
+  const inPortal = usePatientPortal();
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const [doctors, setDoctors] = useState([]);
@@ -282,9 +284,12 @@ function BookAppointment() {
 
  if (!isAuthenticated) {
   return (
-    <div className="bg-[#ffffff] min-h-screen">
-      <Nav />
-      <SectionHeader title="Book An Appointment" />
+    <div className={inPortal ? "" : "bg-[#ffffff] min-h-screen"}>
+      {!inPortal && <Nav />}
+      {!inPortal && <SectionHeader title="Book An Appointment" />}
+      {inPortal && (
+        <h2 className="text-2xl font-bold text-[#2b2c6c] mb-6">Book an appointment</h2>
+      )}
       <div className="container mx-auto px-4 py-12 flex justify-center items-center min-h-[60vh]">
         <div className="w-full max-w-md overflow-hidden">
           {/* Card with glass morphism effect */}
@@ -340,16 +345,19 @@ function BookAppointment() {
           </div>
         </div>
       </div>
-      <Footer />
+      {!inPortal && <Footer />}
     </div>
   );
 }
 
   return (
     <ErrorBoundary>
-      <div className="bg-[#ffffff] min-h-screen">
-        <Nav />
-        <SectionHeader title="Book An Appointment" />
+      <div className={inPortal ? "" : "bg-[#ffffff] min-h-screen"}>
+        {!inPortal && <Nav />}
+        {!inPortal && <SectionHeader title="Book An Appointment" />}
+        {inPortal && (
+          <h2 className="text-2xl font-bold text-[#2b2c6c] mb-6">Book an appointment</h2>
+        )}
 
         <div className="container flex justify-center px-4 py-8 mx-auto">
           <div className="w-full max-w-2xl">
@@ -749,7 +757,7 @@ function BookAppointment() {
           </div>
         </div>
 
-        <Footer />
+        {!inPortal && <Footer />}
       </div>
     </ErrorBoundary>
   );
