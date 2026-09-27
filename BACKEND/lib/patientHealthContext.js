@@ -122,7 +122,6 @@ function buildHealthSummaryReply(ctx) {
   if (parts.length <= 1) {
     parts.push("No detailed records found yet. Log vitals or use Symptom AI to build your history.");
   }
-  parts.push("\n*This is not a diagnosis. Discuss these records with your clinician.*");
   return parts.join("\n\n");
 }
 

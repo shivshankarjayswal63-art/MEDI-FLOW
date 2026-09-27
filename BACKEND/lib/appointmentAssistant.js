@@ -29,10 +29,31 @@ function isBookingContinuation(message, bookingState) {
   return false;
 }
 
-function shouldRunBookingFlow(message, bookingState, selection) {
+function isActiveBookingWizard(history, bookingState) {
+  if (bookingState?.step && BOOKING_STEPS.includes(bookingState.step)) return true;
+  if (!Array.isArray(history) || !history.length) return false;
+  const lastAssistant = [...history].reverse().find((m) => m.role === "assistant");
+  if (!lastAssistant?.content) return false;
+  return /\b(Step [1-5]|MEDI FLOW doctors|tap a doctor|Choose a time|Confirm booking|In-person|Video call)\b/i.test(
+    String(lastAssistant.content)
+  );
+}
+
+function shouldRunBookingFlow(message, bookingState, selection, options = {}) {
+  const { forceBooking = false, history = [] } = options;
+  if (forceBooking) return true;
   if (selection?.kind) return true;
   if (isBookingContinuation(message, bookingState)) return true;
-  return detectBookingIntent(message);
+  if (detectBookingIntent(message)) return true;
+  if (isActiveBookingWizard(history, bookingState)) return true;
+  return false;
+}
+
+function llmRefusedBooking(reply) {
+  if (!reply) return false;
+  return /\b(not able to book|cannot book|can't book|unable to book|don't book|do not book|i'm not able to book|cannot directly book)\b/i.test(
+    reply
+  );
 }
 
 function matchSpecialization(message) {
@@ -543,6 +564,8 @@ module.exports = {
   detectBookingIntent,
   shouldRunBookingFlow,
   isBookingContinuation,
+  isActiveBookingWizard,
+  llmRefusedBooking,
   processBookingFlow,
   handleBookingRequest,
   listDoctorsForChat,

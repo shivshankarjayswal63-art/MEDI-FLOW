@@ -1,11 +1,38 @@
 const { processMedicalChat } = require("../lib/medicalAssistant");
 const { getPatientHealthContext } = require("../lib/patientHealthContext");
+const { loadChatSession, appendChatMessages, clearChatSession } = require("../lib/medicalAssistantChatStore");
 const User = require("../Models/UserModel");
 const Appointment = require("../Models/AppoinmentModel");
 
+exports.session = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.json({ messages: [], bookingState: null });
+    }
+    const session = await loadChatSession(userId);
+    return res.json(session);
+  } catch (err) {
+    console.error("medical-assistant session:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.clearSession = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: "Sign in required" });
+    await clearChatSession(userId);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("medical-assistant clear:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 exports.chat = async (req, res) => {
   try {
-    const { message, history, bookingState, selection } = req.body || {};
+    const { message, history, bookingState, selection, forceBooking } = req.body || {};
     if (!message || !String(message).trim()) {
       return res.status(400).json({ error: "message is required" });
     }
@@ -13,12 +40,34 @@ exports.chat = async (req, res) => {
     const userId = req.user?.id || null;
     const patientContext = userId ? await getPatientHealthContext(userId) : null;
 
-    const result = await processMedicalChat(String(message).trim(), history, {
+    let effectiveHistory = Array.isArray(history) ? history : [];
+    let effectiveBookingState = bookingState || null;
+
+    if (userId && effectiveHistory.length === 0) {
+      const session = await loadChatSession(userId);
+      if (session.messages?.length) {
+        effectiveHistory = session.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+      }
+      if (!effectiveBookingState && session.bookingState) {
+        effectiveBookingState = session.bookingState;
+      }
+    }
+
+    const result = await processMedicalChat(String(message).trim(), effectiveHistory, {
       userId,
       patientContext,
-      bookingState: bookingState || null,
+      bookingState: effectiveBookingState,
       selection: selection || null,
+      forceBooking: Boolean(forceBooking),
     });
+
+    if (userId) {
+      await appendChatMessages(userId, String(message).trim(), result);
+    }
+
     return res.json(result);
   } catch (err) {
     console.error("medical-assistant chat:", err);

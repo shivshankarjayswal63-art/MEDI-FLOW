@@ -98,6 +98,8 @@ Log in on the site at **/login** — you should land on **/User-Dashboard**.
 
 **Medical assistant booking:** patient must be logged in; chat uses `POST /api/medical-assistant/book` with JWT.
 
+**Medical assistant chat history (optional):** run `supabase/migrations/003_medical_assistant_chat.sql` on Supabase so signed-in patients get server-side saved chats (`GET /api/medical-assistant/session`). Without it, chats still persist in the browser.
+
 ---
 
 ## Option B — Render (good for long-running Express)

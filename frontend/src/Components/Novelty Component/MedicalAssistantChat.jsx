@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useLocation } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -21,14 +21,27 @@ import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import { brand } from "../../theme/brand";
 import { useTypewriter } from "../../hooks/useTypewriter";
-import { sendMedicalAssistantMessage, bookMedicalAssistantSlot } from "../../utils/medicalAssistantApi";
+import {
+  sendMedicalAssistantMessage,
+  bookMedicalAssistantSlot,
+  fetchMedicalAssistantSession,
+  clearMedicalAssistantSession,
+} from "../../utils/medicalAssistantApi";
 import { getMedicalQuestionSuggestions } from "../../utils/medicalChatSuggestions";
+import { isBookingMessage } from "../../utils/bookingIntent";
+import {
+  loadLocalMedicalChat,
+  saveLocalMedicalChat,
+  clearLocalMedicalChat,
+  sessionRowsToUiMessages,
+} from "../../utils/medicalAssistantChatStorage";
+import MedicalAssistantActionChips from "./MedicalAssistantActionChips";
 
 const INITIAL_MESSAGES = [
   {
     role: "assistant",
     content:
-      "Hello! I answer **health questions only**. When signed in, I can use **your health record** and help **book appointments**. What would you like to know?",
+      "Welcome to **MEDI FLOW** assistant. Ask about symptoms or say **book appointment** — I remember your chat when you return.",
     animate: false,
   },
 ];
@@ -105,6 +118,7 @@ function AssistantMessageBody({ message, isLatestAssistant }) {
 
 export default function MedicalAssistantChat() {
   const theme = useTheme();
+  const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
@@ -113,7 +127,9 @@ export default function MedicalAssistantChat() {
   const [booking, setBooking] = useState(false);
   const [urgent, setUrgent] = useState(false);
   const [error, setError] = useState("");
+  const [sessionReady, setSessionReady] = useState(false);
   const bottomRef = useRef(null);
+  const autoSentRef = useRef(false);
 
   const trimmedInput = input.trim();
   const suggestions = useMemo(() => getMedicalQuestionSuggestions(input), [input]);
@@ -129,6 +145,36 @@ export default function MedicalAssistantChat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, booking]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const local = loadLocalMedicalChat();
+      if (local?.messages?.length) {
+        setMessages(local.messages);
+        setBookingState(local.bookingState || null);
+      }
+      try {
+        const session = await fetchMedicalAssistantSession();
+        if (cancelled) return;
+        if (session?.messages?.length) {
+          setMessages(sessionRowsToUiMessages(session.messages, INITIAL_MESSAGES));
+          setBookingState(session.bookingState || null);
+        }
+      } catch {
+        /* offline */
+      }
+      setSessionReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!sessionReady) return;
+    saveLocalMedicalChat({ messages, bookingState });
+  }, [messages, bookingState, sessionReady]);
 
   const pushAssistant = (content, meta, actions = []) => {
     setMessages((prev) => [
@@ -157,7 +203,8 @@ export default function MedicalAssistantChat() {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
 
-    const { selection = null, skipUserBubble = false } = options;
+    const { selection = null, skipUserBubble = false, forceBooking = false } = options;
+    const useForceBooking = forceBooking || isBookingMessage(trimmed) || Boolean(bookingState?.step);
 
     setError("");
     if (!skipUserBubble) {
@@ -171,6 +218,7 @@ export default function MedicalAssistantChat() {
       const data = await sendMedicalAssistantMessage(trimmed, historyBefore, {
         bookingState,
         selection,
+        forceBooking: useForceBooking,
       });
       applyChatResponse(data);
     } catch (err) {
@@ -190,6 +238,17 @@ export default function MedicalAssistantChat() {
     }
   };
 
+  useEffect(() => {
+    if (!sessionReady || autoSentRef.current) return;
+    const auto = location.state?.autoMessage;
+    if (auto && typeof auto === "string") {
+      autoSentRef.current = true;
+      window.history.replaceState({}, document.title);
+      sendMessage(auto, { forceBooking: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot navigation payload
+  }, [sessionReady, location.state]);
+
   const handleBookingSelection = async (userLabel, selection) => {
     if (loading) return;
     setMessages((prev) => [...prev.map((m) => ({ ...m, animate: false })), { role: "user", content: userLabel }]);
@@ -199,6 +258,7 @@ export default function MedicalAssistantChat() {
       const data = await sendMedicalAssistantMessage(userLabel, toHistory(messages), {
         bookingState,
         selection,
+        forceBooking: true,
       });
       applyChatResponse(data);
     } catch (err) {
@@ -231,120 +291,19 @@ export default function MedicalAssistantChat() {
     }
   };
 
-  const renderMessageActions = (msg) => {
-    if (!msg.actions?.length) return null;
+  const startBooking = () => sendMessage("book appointment", { forceBooking: true });
 
-    return (
-      <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-        {msg.actions.flatMap((a) => {
-          if (a.type === "pick_doctor") {
-            return (a.doctors || []).map((d) => (
-              <Chip
-                key={`doc-${d.doctorId}`}
-                label={d.doctorName}
-                onClick={() =>
-                  handleBookingSelection(`Doctor: ${d.doctorName}`, {
-                    kind: "doctor",
-                    doctorId: d.doctorId,
-                    doctorName: d.doctorName,
-                  })
-                }
-                disabled={loading || booking}
-                color="primary"
-                variant="outlined"
-                sx={{ height: "auto", py: 0.5, "& .MuiChip-label": { whiteSpace: "normal" } }}
-              />
-            ));
-          }
-          if (a.type === "pick_date") {
-            return (a.dates || []).map((d) => (
-              <Chip
-                key={`date-${a.doctorId}-${d.date}`}
-                label={d.label || d.date}
-                onClick={() =>
-                  handleBookingSelection(`Date: ${d.label || d.date}`, {
-                    kind: "date",
-                    doctorId: a.doctorId,
-                    date: d.date,
-                  })
-                }
-                disabled={loading || booking}
-                color="primary"
-                variant="outlined"
-              />
-            ));
-          }
-          if (a.type === "pick_time") {
-            return (a.times || []).map((t) => (
-              <Chip
-                key={`time-${a.date}-${t.time}`}
-                label={t.label || t.time}
-                onClick={() =>
-                  handleBookingSelection(`Time: ${t.time}`, {
-                    kind: "time",
-                    doctorId: a.doctorId,
-                    date: a.date,
-                    time: t.time,
-                  })
-                }
-                disabled={loading || booking}
-                color="primary"
-                variant="outlined"
-              />
-            ));
-          }
-          if (a.type === "pick_visit_mode") {
-            return (a.modes || []).map((m) => (
-              <Chip
-                key={`mode-${m.mode}`}
-                label={m.label}
-                onClick={() =>
-                  handleBookingSelection(m.label, {
-                    kind: "visit_mode",
-                    doctorId: a.doctorId,
-                    visitMode: m.mode,
-                  })
-                }
-                disabled={loading || booking}
-                color="secondary"
-                variant="outlined"
-              />
-            ));
-          }
-          if (a.type === "confirm_booking") {
-            return (
-              <Chip
-                key="confirm-book"
-                label="Confirm booking"
-                onClick={() => handleConfirmBooking(a)}
-                disabled={booking}
-                color="success"
-                sx={{ fontWeight: 700 }}
-              />
-            );
-          }
-          if (a.type === "pick_slot") {
-            return (a.slots || []).map((slot) => (
-              <Chip
-                key={`${a.doctorId}-${slot.date}-${slot.time}`}
-                label={slot.label || `${slot.date} ${slot.time}`}
-                onClick={() =>
-                  handleBookingSelection(`Book ${slot.label}`, {
-                    kind: "time",
-                    doctorId: a.doctorId,
-                    date: slot.date,
-                    time: slot.time,
-                  })
-                }
-                disabled={loading || booking}
-                variant="outlined"
-              />
-            ));
-          }
-          return [];
-        })}
-      </Box>
-    );
+  const handleNewChat = async () => {
+    setMessages(INITIAL_MESSAGES);
+    setBookingState(null);
+    setUrgent(false);
+    setError("");
+    clearLocalMedicalChat();
+    try {
+      await clearMedicalAssistantSession();
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -413,12 +372,19 @@ export default function MedicalAssistantChat() {
                 Symptom AI
               </Button>
               <Button
-                component={RouterLink}
-                to="/Book-Appointment"
                 size="small"
+                onClick={startBooking}
                 sx={{ bgcolor: alpha("#fff", 0.2), color: "#fff", fontSize: "0.7rem" }}
               >
                 Book
+              </Button>
+              <Button
+                size="small"
+                onClick={handleNewChat}
+                sx={{ color: "#fff", borderColor: alpha("#fff", 0.35), fontSize: "0.65rem" }}
+                variant="outlined"
+              >
+                New chat
               </Button>
             </Stack>
           </Stack>
@@ -491,7 +457,14 @@ export default function MedicalAssistantChat() {
                         <AssistantMessageBody message={msg} isLatestAssistant={isLatestAssistant} />
                       )}
                     </Paper>
-                    {!isUser && renderMessageActions(msg)}
+                    {!isUser && (
+                      <MedicalAssistantActionChips
+                        actions={msg.actions}
+                        onSelection={handleBookingSelection}
+                        onConfirm={handleConfirmBooking}
+                        disabled={loading || booking}
+                      />
+                    )}
                   </Box>
                 </Stack>
               </Box>

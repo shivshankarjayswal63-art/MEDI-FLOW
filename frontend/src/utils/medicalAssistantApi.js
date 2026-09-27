@@ -4,7 +4,36 @@ const getApiBase = () => import.meta.env.VITE_API_URL || "";
  * @param {string} message
  * @param {{ role: string, content: string }[]} history
  */
-export async function sendMedicalAssistantMessage(message, history = [], { bookingState = null, selection = null } = {}) {
+export async function fetchMedicalAssistantSession() {
+  const api = getApiBase();
+  if (!api) return { messages: [], bookingState: null };
+
+  const token = localStorage.getItem("token");
+  if (!token) return { messages: [], bookingState: null };
+
+  const res = await fetch(`${api}/api/medical-assistant/session`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return { messages: [], bookingState: null };
+  return res.json();
+}
+
+export async function clearMedicalAssistantSession() {
+  const api = getApiBase();
+  if (!api) return;
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  await fetch(`${api}/api/medical-assistant/session`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function sendMedicalAssistantMessage(
+  message,
+  history = [],
+  { bookingState = null, selection = null, forceBooking = false } = {}
+) {
   const api = getApiBase();
   if (!api) {
     throw new Error("VITE_API_URL is not configured");
@@ -21,7 +50,7 @@ export async function sendMedicalAssistantMessage(message, history = [], { booki
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ message, history, bookingState, selection }),
+      body: JSON.stringify({ message, history, bookingState, selection, forceBooking }),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);

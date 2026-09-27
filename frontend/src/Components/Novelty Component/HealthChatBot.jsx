@@ -22,11 +22,15 @@ import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import MinimizeIcon from "@mui/icons-material/Minimize";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
+import { useNavigate } from "react-router-dom";
 import { sendMedicalAssistantMessage } from "../../utils/medicalAssistantApi";
+import { isBookingMessage } from "../../utils/bookingIntent";
+import { loadLocalMedicalChat, saveLocalMedicalChat } from "../../utils/medicalAssistantChatStorage";
 
 const HealthChatBot = ({ open, onClose }) => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "Hi! I'm your AI Health Assistant. Tell me your symptoms and I'll help you." },
+    { sender: "bot", text: "Hi! I'm your MEDI FLOW assistant. Ask about symptoms or say **book appointment**." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,16 +47,28 @@ const HealthChatBot = ({ open, onClose }) => {
 
   // Suggested responses for quick access
   const suggestedResponses = [
+    "Book appointment",
     "I have chest pain",
     "Feeling dizzy",
     "Stomach hurts",
-    "Shortness of breath",
-    "How to treat gastritis?"
+    "Summarize my health history",
   ];
 
   useEffect(() => {
     if (open) setHasUnread(false);
   }, [open]);
+
+  useEffect(() => {
+    const local = loadLocalMedicalChat();
+    if (local?.messages?.length) {
+      const mapped = local.messages.map((m) => ({
+        sender: m.role === "user" ? "user" : "bot",
+        text: m.fullContent || m.content,
+        actions: m.actions,
+      }));
+      if (mapped.length) setMessages(mapped);
+    }
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -66,6 +82,12 @@ const HealthChatBot = ({ open, onClose }) => {
     if (!input.trim()) return;
 
     const text = input.trim();
+    if (isBookingMessage(text)) {
+      navigate("/medical-assistant", { state: { autoMessage: text } });
+      setInput("");
+      if (onClose) onClose();
+      return;
+    }
     const userMessage = { sender: "user", text };
     const history = messages
       .filter((m) => !m.temp && (m.sender === "user" || m.sender === "bot"))
@@ -82,7 +104,9 @@ const HealthChatBot = ({ open, onClose }) => {
     setMessages((prev) => [...prev, { sender: "bot", text: "Typing...", temp: true }]);
 
     try {
-      const data = await sendMedicalAssistantMessage(text, history);
+      const data = await sendMedicalAssistantMessage(text, history, {
+        forceBooking: isBookingMessage(text),
+      });
 
       // Remove typing placeholder
       setMessages((prev) => prev.filter((msg) => !msg.temp));
@@ -93,7 +117,20 @@ const HealthChatBot = ({ open, onClose }) => {
         localStorage.setItem("lastPrediction", botReply);
       }
       
-      setMessages(prev => [...prev, { sender: "bot", text: botReply }]);
+      setMessages((prev) => {
+        const base = prev.filter((m) => !m.temp);
+        const next = [...base, { sender: "bot", text: botReply, actions: data.actions || [] }];
+        saveLocalMedicalChat({
+          messages: next.map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+            fullContent: m.text,
+            actions: m.actions || [],
+          })),
+          bookingState: data.bookingState || null,
+        });
+        return next;
+      });
 
       if (!open) setHasUnread(true);
 

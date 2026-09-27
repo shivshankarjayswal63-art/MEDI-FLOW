@@ -3,7 +3,12 @@ const {
   detectHealthSummaryIntent,
   buildHealthSummaryReply,
 } = require("./patientHealthContext");
-const { shouldRunBookingFlow, processBookingFlow } = require("./appointmentAssistant");
+const {
+  shouldRunBookingFlow,
+  processBookingFlow,
+  detectBookingIntent,
+  llmRefusedBooking,
+} = require("./appointmentAssistant");
 
 const NVIDIA_BASE = "https://integrate.api.nvidia.com/v1/chat/completions";
 const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
@@ -289,26 +294,36 @@ function buildRulesReply(message, analysis, info) {
     parts.push(
       "I can help with symptom screening and general information about common conditions. Describe what you feel (e.g. chest pain and shortness of breath), or ask what a condition is (e.g. what is asthma?)."
     );
-    parts.push(
-      "For a structured check, use Symptom AI in the menu. This is educational only—not a diagnosis."
-    );
-  } else {
-    parts.push("This is educational screening only—not a diagnosis. See a clinician for personal medical advice.");
+    parts.push("For a structured check, use **Symptom AI** in the menu.");
   }
   return parts.join("\n\n");
 }
 
+function polishAssistantReply(text) {
+  if (!text) return text;
+  let t = String(text);
+  const stripLines = [
+    /^\s*reminder:.*$/gim,
+    /^\s*\*?this is (educational|not a diagnosis).*$/gim,
+    /^\s*i(?:'m| am) not a (?:doctor|clinician|physician|medical professional).*$/gim,
+    /^\s*i(?:'m| am) a health educator.*$/gim,
+    /^\s*please consult (a |your )?healthcare professional.*$/gim,
+    /^\s*consult a (?:licensed )?(?:clinician|healthcare professional).*$/gim,
+    /^\s*you do not diagnose.*$/gim,
+  ];
+  for (const re of stripLines) t = t.replace(re, "");
+  return t.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function buildSystemPrompt(context, patientContext) {
-  return `You are MEDI FLOW Medical Assistant — a health educator inside a hospital patient portal.
+  return `You are MEDI FLOW Medical Assistant inside the patient portal.
 Rules:
-- ONLY discuss medicine, symptoms, diseases, prevention, when to seek care, and general wellness. If the user asks anything non-medical, politely refuse and invite a health question.
-- You do NOT diagnose, prescribe medications, or replace a licensed clinician.
-- Answer in clear, simple English with short paragraphs or bullet lists when helpful.
-- If urgent screening context is provided, emphasize emergency care when appropriate.
-- When patientHealthRecord is provided, personalize educational answers using ONLY that data — do not invent tests or diagnoses.
-- For booking: you do NOT book externally. MEDI FLOW books only inside this app via the chat booking wizard (doctor → date → time → in-person or video). Never say you cannot book; tell users to follow the chips in chat.
-- Keep replies under about 200 words unless the user asks for detail.
-- End with a brief reminder to consult a healthcare professional for personal advice.
+- ONLY discuss medicine, symptoms, conditions, prevention, and wellness. Refuse non-medical topics briefly.
+- Use clear, simple English. Use conversation history — do not ask the user to repeat details they already gave.
+- When patientHealthRecord is provided, personalize using ONLY that data.
+- Appointments: ALWAYS book inside MEDI FLOW only. Never say you cannot book. Never tell users to call clinics or use external portals. Say: use the doctor/date/time chips in this chat.
+- Never say you are "not a doctor", "health educator", or add legal disclaimers.
+- Keep replies under about 200 words unless more detail is requested.
 
 Structured screening context (may be empty):
 ${JSON.stringify(context)}
@@ -384,23 +399,36 @@ function baseResponse(extra) {
   };
 }
 
-async function processMedicalChat(message, history, options = {}) {
-  const { patientContext = null, userId = null, bookingState = null, selection = null } = options;
+async function runBookingResponse(message, options) {
+  const { userId, patientContext, bookingState, selection } = options;
+  const booking = await processBookingFlow({
+    message,
+    userId,
+    patientContext,
+    bookingState,
+    selection,
+  });
+  return baseResponse({
+    reply: polishAssistantReply(booking.reply),
+    actions: booking.actions || [],
+    bookingState: booking.bookingState ?? null,
+    source: booking.source || "rules",
+  });
+}
 
-  if (shouldRunBookingFlow(message, bookingState, selection)) {
-    const booking = await processBookingFlow({
-      message,
-      userId,
-      patientContext,
-      bookingState,
-      selection,
-    });
-    return baseResponse({
-      reply: booking.reply,
-      actions: booking.actions || [],
-      bookingState: booking.bookingState ?? null,
-      source: booking.source || "rules",
-    });
+async function processMedicalChat(message, history, options = {}) {
+  const {
+    patientContext = null,
+    userId = null,
+    bookingState = null,
+    selection = null,
+    forceBooking = false,
+  } = options;
+
+  const flowOpts = { forceBooking, history };
+
+  if (shouldRunBookingFlow(message, bookingState, selection, flowOpts)) {
+    return runBookingResponse(message, { userId, patientContext, bookingState, selection });
   }
 
   if (isGreetingOnly(message)) {
@@ -458,10 +486,17 @@ async function processMedicalChat(message, history, options = {}) {
   if (!reply) {
     reply = rulesReply;
     source = "rules";
+  } else if (
+    llmRefusedBooking(reply) ||
+    (detectBookingIntent(message) && /\b(appointment|book|schedule)\b/i.test(message))
+  ) {
+    return runBookingResponse(message, { userId, patientContext, bookingState, selection });
   } else if (analysis?.urgent && !reply.toLowerCase().includes("emergency")) {
     reply +=
       "\n\n⚠️ Screening suggests urgent symptoms — seek emergency care if severe or worsening.";
   }
+
+  reply = polishAssistantReply(reply);
 
   return baseResponse({
     reply,
