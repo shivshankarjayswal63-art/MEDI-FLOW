@@ -77,12 +77,30 @@ exports.getSummary = async (req, res) => {
         const { count: totalDoctors } = await supabase
           .from("doctors")
           .select("*", { count: "exact", head: true });
+        let pendingDoctorApprovals = 0;
+        let approvedDoctors = totalDoctors ?? 0;
+        const { count: pendingCount, error: pendingErr } = await supabase
+          .from("doctors")
+          .select("*", { count: "exact", head: true })
+          .eq("approval_status", "pending");
+        if (!pendingErr) {
+          pendingDoctorApprovals = pendingCount ?? 0;
+        }
+        const { count: approvedCount, error: approvedErr } = await supabase
+          .from("doctors")
+          .select("*", { count: "exact", head: true })
+          .eq("approval_status", "approved");
+        if (!approvedErr && approvedCount != null) {
+          approvedDoctors = approvedCount;
+        }
         return res.json({
           totalPatients: totalPatients ?? 0,
           newPatients: Math.min(totalPatients ?? 0, 5),
           appointmentsToday: appointmentsToday ?? 0,
           criticalCases: 2,
           totalDoctors: totalDoctors ?? 0,
+          approvedDoctors,
+          pendingDoctorApprovals,
         });
       }
 

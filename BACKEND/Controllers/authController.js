@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../Models/UserModel");
 const Doctor = require("../Models/DoctorManagement/doctorModel"); // Import Doctor model
 const { resolveUserRole, USER_PORTAL_ROLES } = require("../lib/roles");
+const { PENDING, REJECTED, getApprovalStatus } = require("../lib/doctorApproval");
 
 // Register a User (Signup)
 const registerUser = async (req, res) => {
@@ -122,7 +123,8 @@ const registerDoctor = async (req, res) => {
   const { name, email, password, phone, specialization, qualifications, experience, address, availability, gender, dateOfBirth, regDate } = req.body;
 
   try {
-    let existingDoctor = await Doctor.findOne({ email });
+    const normalizedEmail = String(email).toLowerCase().trim();
+    let existingDoctor = await Doctor.findOne({ email: normalizedEmail });
     if (existingDoctor) {
       return res.status(400).json({ message: "Doctor already exists" });
     }
@@ -134,7 +136,7 @@ const registerDoctor = async (req, res) => {
     // Create doctor
     const newDoctor = new Doctor({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       phone,
       specialization,
@@ -145,21 +147,15 @@ const registerDoctor = async (req, res) => {
       gender,
       dateOfBirth,
       regDate,
+      approvalStatus: PENDING,
     });
 
     await newDoctor.save();
 
-    // Generate JWT Token
-    const token = jwt.sign(
-      { id: newDoctor._id, email: newDoctor.email, role: "doctor" },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
     res.status(201).json({
-      message: "Doctor registered successfully",
-      doctor: newDoctor,
-      token: token,
+      message:
+        "Registration submitted. A platform administrator will verify your credentials before you can sign in and appear to patients.",
+      approvalStatus: PENDING,
     });
 
   } catch (err) {
@@ -196,15 +192,36 @@ const loginDoctor = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    const approval = getApprovalStatus(doctor);
+    if (approval === PENDING) {
+      return res.status(403).json({
+        message:
+          "Your registration is pending platform admin approval. You will be able to sign in after verification.",
+        approvalStatus: PENDING,
+      });
+    }
+    if (approval === REJECTED) {
+      return res.status(403).json({
+        message:
+          doctor.rejectionReason ||
+          doctor.rejection_reason ||
+          "Your registration was not approved. Contact support if you believe this is an error.",
+        approvalStatus: REJECTED,
+      });
+    }
+
     const token = jwt.sign(
-      { id: doctor._id, email: doctor.email, role: "doctor" },
+      { id: doctor._id || doctor.id, email: doctor.email, role: "doctor" },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
+    const safeDoctor = { ...doctor };
+    delete safeDoctor.password;
+
     res.status(200).json({
       message: "Doctor login successful",
-      doctor,
+      doctor: safeDoctor,
       role: "doctor",
       token,
     });

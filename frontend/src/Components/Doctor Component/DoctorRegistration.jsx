@@ -31,11 +31,14 @@ function DoctorRegistration() {
     setError("");
 
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register-doctor`, formData);
-      alert("Doctor registration successful! Please login.");
-      navigate("/login-doctor"); // Redirect to doctor login page
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register-doctor`, formData);
+      alert(
+        res.data?.message ||
+          "Registration submitted. A platform admin will verify your profile before you can sign in."
+      );
+      navigate("/login-doctor");
     } catch (error) {
-      setError("Registration failed. Please try again.");
+      setError(error.response?.data?.message || "Registration failed. Please try again.");
       console.error("Registration error:", error);
     } finally {
       setLoading(false);

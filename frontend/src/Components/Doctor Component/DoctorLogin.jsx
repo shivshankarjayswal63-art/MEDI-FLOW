@@ -2,6 +2,18 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
+  inferRoleFromEmail,
+  isStaffRole,
+  routeForRole,
+  ROLES,
+} from "../../utils/authRoutes";
+import {
+  setAuthSession,
+  isAuthenticated,
+  getStoredRole,
+  getDashboardPath,
+} from "../../utils/auth";
+import {
   Box,
   TextField,
   Button,
@@ -30,22 +42,14 @@ function DoctorLogin() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-    if (!token || !role) return;
-    if (role === "doctor") {
+    if (!isAuthenticated()) return;
+    const role = getStoredRole();
+    if (!role) return;
+    if (role === ROLES.DOCTOR) {
       navigate("/Doctor-Dashboard", { replace: true });
-    } else {
-      navigate(
-        {
-          user_admin: "/User-Dashboard",
-          pharmacy_admin: "/Pharmacy-Dashboard",
-          appointment_admin: "/Appointment-Dashboard",
-          patient: "/patient-dashboard",
-        }[role] || "/login",
-        { replace: true }
-      );
+      return;
     }
+    navigate(getDashboardPath(role), { replace: true });
   }, [navigate]);
 
   // Handle input change
@@ -73,29 +77,38 @@ function DoctorLogin() {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const normalizedEmail = String(formData.email).toLowerCase().trim();
+    const emailRole = inferRoleFromEmail(normalizedEmail);
+    if (isStaffRole(emailRole)) {
+      setError("Staff accounts must sign in at /login (not Doctor Login).");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
       const response = await axios.post(
-  `${import.meta.env.VITE_API_URL}/api/auth/login-doctor`,
-        formData
+        `${import.meta.env.VITE_API_URL}/api/auth/login-doctor`,
+        { ...formData, email: normalizedEmail }
       );
 
-      // Save token and login status in localStorage
       const { token, doctor, role: apiRole } = response.data;
-      const role = apiRole || "doctor";
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
-      localStorage.setItem("isLoggedIn", "true");
-      if (doctor?._id || doctor?.id) {
-        localStorage.setItem("userId", doctor._id || doctor.id);
+      const role = apiRole || ROLES.DOCTOR;
+      if (role !== ROLES.DOCTOR) {
+        setError("This account is not a doctor profile. Use the main login at /login.");
+        return;
       }
-      sessionStorage.setItem("doctor", JSON.stringify(doctor));
-      window.dispatchEvent(new Event("medi-flow-auth"));
 
-      alert("Login successful!");
-      navigate("/Doctor-Dashboard"); // Redirect to user account page
+      setAuthSession({
+        token,
+        role,
+        userId: doctor?._id || doctor?.id,
+        email: normalizedEmail,
+        doctorProfile: doctor,
+      });
+
+      navigate(routeForRole(role));
     } catch (error) {
       if (error.response) {
         setError(error.response.data.message || "Invalid email or password.");

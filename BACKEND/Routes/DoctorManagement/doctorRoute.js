@@ -9,11 +9,13 @@ const {
   deleteDoctor,
 } = require("../../Controllers/DoctorManagement/doctorController");
 const authMiddleware = require("../../Middleware/authMiddleware");
+const optionalAuthMiddleware = require("../../Middleware/optionalAuthMiddleware");
+const { requireRole } = require("../../Middleware/roleMiddleware");
 
-router.get("/profile", authMiddleware, getDoctorProfile); // Protected Route
+router.get("/profile", authMiddleware, requireRole("doctor"), getDoctorProfile);
 router.get("/public", getPublicDoctors);
-router.get("/", getAllDoctors);
-router.get("/:id", getDoctorById);
+router.get("/", authMiddleware, requireRole("user_admin"), getAllDoctors);
+router.get("/:id", optionalAuthMiddleware, getDoctorById);
 router.put("/:id", updateDoctor);
 router.delete("/:id", deleteDoctor);
 

@@ -28,16 +28,31 @@ const allowedOrigins = [
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   "http://localhost:5173",
   "http://localhost:5174",
+  ...(process.env.CORS_EXTRA_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
 ].filter(Boolean);
+
+function isAllowedCorsOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.endsWith(".vercel.app")) return true;
+  const suffix = process.env.CORS_ORIGIN_SUFFIX?.trim();
+  if (suffix) {
+    try {
+      const host = new URL(origin).hostname;
+      if (host === suffix || host.endsWith(`.${suffix}`)) return true;
+    } catch {
+      /* ignore */
+    }
+  }
+  return false;
+}
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    if (origin.endsWith(".vercel.app")) {
+    if (isAllowedCorsOrigin(origin)) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
@@ -80,6 +95,7 @@ app.use("/api/users", userRoutes); // Routes for User CRUD
 app.use("/api/appoinment", appointmentRoute); // Routes for Appointment Management
 app.use("/api/rejected-appointments", rejectedAppointmentRoutes);
 app.use("/api/doctor", doctorRoute); // Routes for Doctor Management
+app.use("/api/admin/doctors", require("./Routes/adminDoctorRoutes"));
 app.use("/api/stock", stockRoute); // Routes for Stock Management
 app.use("/api/prescription", prescriptionRoute); // Routes for Prescription Management
 app.use("/api/prescriptions", require("./Routes/DoctorManagement/prescriptionRoute")); // Register prescription routes

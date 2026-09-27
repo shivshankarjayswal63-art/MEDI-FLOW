@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { attachUserFromJwt } = require("../lib/roles");
 
 /** Sets req.user when Bearer token is valid; continues without user otherwise. */
 function optionalAuthMiddleware(req, res, next) {
@@ -8,7 +9,7 @@ function optionalAuthMiddleware(req, res, next) {
     return next();
   }
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = attachUserFromJwt(jwt.verify(token, process.env.JWT_SECRET));
   } catch {
     // ignore invalid token for optional auth
   }

@@ -121,7 +121,7 @@ function BookAppointment() {
     console.log("BookAppointment: Fetching doctors...");
     const fetchDoctors = async () => {
       try {
-  const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/doctor/`);
+  const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/doctor/public`);
         console.log("BookAppointment: Doctors fetched:", response.data);
         setDoctors(response.data);
       } catch (error) {

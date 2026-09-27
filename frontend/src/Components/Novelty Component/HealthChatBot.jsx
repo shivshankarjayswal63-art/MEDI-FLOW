@@ -26,6 +26,7 @@ import { useNavigate } from "react-router-dom";
 import { sendMedicalAssistantMessage } from "../../utils/medicalAssistantApi";
 import { isBookingMessage } from "../../utils/bookingIntent";
 import { loadLocalMedicalChat, saveLocalMedicalChat } from "../../utils/medicalAssistantChatStorage";
+import { isAuthenticated } from "../../utils/auth";
 
 const HealthChatBot = ({ open, onClose }) => {
   const navigate = useNavigate();
@@ -78,14 +79,51 @@ const HealthChatBot = ({ open, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const formatChatError = (err) => {
+    if (err?.name === "AbortError") {
+      return "The assistant took too long. Try again or open Medical assistant from the patient menu.";
+    }
+    const msg = err?.message || "";
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      return "Cannot reach the API. Redeploy the frontend (latest) or set VITE_API_URL and FRONTEND01 on Vercel.";
+    }
+    if (msg.includes("VITE_API_URL")) {
+      return "API URL is not configured. Redeploy the frontend after setting env vars.";
+    }
+    return msg || "Something went wrong. Please try again.";
+  };
 
-    const text = input.trim();
+  const submitMessage = async (rawText) => {
+    const text = String(rawText || "").trim();
+    if (!text) return;
+
+    if (text === "Summarize my health history" && !isAuthenticated()) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "user", text },
+        {
+          sender: "bot",
+          text: "Sign in as a patient to summarize your vitals, reports, and visit history — or ask a general health question here.",
+        },
+      ]);
+      return;
+    }
+
     if (isBookingMessage(text)) {
-      navigate("/medical-assistant", { state: { autoMessage: text } });
+      if (isAuthenticated()) {
+        navigate("/medical-assistant", { state: { autoMessage: text } });
+        if (onClose) onClose();
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { sender: "user", text },
+          {
+            sender: "bot",
+            text: "Sign in as a patient to book in-app, or browse **Find a Doctor** from the menu.",
+          },
+        ]);
+      }
       setInput("");
-      if (onClose) onClose();
       return;
     }
     const userMessage = { sender: "user", text };
@@ -159,25 +197,26 @@ const HealthChatBot = ({ open, onClose }) => {
       }
     } catch (err) {
       console.error("Error in chat:", err);
-      const isTimeout = err.name === "AbortError";
+      const friendly = formatChatError(err);
       setMessages((prev) => [
         ...prev.filter((msg) => !msg.temp),
-        {
-          sender: "bot",
-          text: isTimeout
-            ? "The assistant took too long. Open Medical assistant from the patient menu or try Symptom AI."
-            : "Error connecting to the server. Check VITE_API_URL and try again.",
-        },
+        { sender: "bot", text: friendly },
       ]);
-      
+
       setNotification({
         open: true,
-        message: "Connection error. Please try again later.",
+        message: friendly,
         severity: "error",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSend = () => {
+    const text = input.trim();
+    setInput("");
+    submitMessage(text);
   };
 
   const handleOptionClick = (option) => {
@@ -227,7 +266,8 @@ const HealthChatBot = ({ open, onClose }) => {
   };
 
   const handleSuggestedResponse = (response) => {
-    setInput(response);
+    setInput("");
+    submitMessage(response);
   };
 
   const toggleMinimize = () => {

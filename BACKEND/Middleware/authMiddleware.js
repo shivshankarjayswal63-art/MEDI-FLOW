@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { attachUserFromJwt } = require("../lib/roles");
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.header("Authorization");
@@ -10,11 +11,10 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Decoded JWT:", decoded); // Debugging line 
-    req.user = decoded;
+    req.user = attachUserFromJwt(decoded);
     next();
   } catch (error) {
-    console.error("JWT Verification Error:", error.message); // Debugging line 
+    console.error("JWT Verification Error:", error.message);
     res.status(401).json({ message: "Invalid token" });
   }
 };

@@ -1,5 +1,7 @@
 const Appointment = require("../Models/AppoinmentModel");
 const User = require("../Models/UserModel");
+const Doctor = require("../Models/DoctorManagement/doctorModel");
+const { assertDoctorBookable } = require("../lib/doctorApproval");
 const RejectedAppointment = require("../Models/RejectAppoinmentModel");
 const nodemailer = require("nodemailer");
 
@@ -49,6 +51,11 @@ const createAppointment = async (req, res) => {
       !user_id
     ) {
       return res.status(400).json({ message: "Please fill all required fields" });
+    }
+
+    const bookable = await assertDoctorBookable(Doctor, doctor_id);
+    if (!bookable.ok) {
+      return res.status(bookable.status).json({ message: bookable.message });
     }
 
     // Generate appointment index number

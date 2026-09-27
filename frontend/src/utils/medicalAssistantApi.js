@@ -1,17 +1,14 @@
-const getApiBase = () => import.meta.env.VITE_API_URL || "";
+import { apiUrl } from "./apiBase";
 
 /**
  * @param {string} message
  * @param {{ role: string, content: string }[]} history
  */
 export async function fetchMedicalAssistantSession() {
-  const api = getApiBase();
-  if (!api) return { messages: [], bookingState: null };
-
   const token = localStorage.getItem("token");
   if (!token) return { messages: [], bookingState: null };
 
-  const res = await fetch(`${api}/api/medical-assistant/session`, {
+  const res = await fetch(apiUrl("/api/medical-assistant/session"), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return { messages: [], bookingState: null };
@@ -19,11 +16,9 @@ export async function fetchMedicalAssistantSession() {
 }
 
 export async function clearMedicalAssistantSession() {
-  const api = getApiBase();
-  if (!api) return;
   const token = localStorage.getItem("token");
   if (!token) return;
-  await fetch(`${api}/api/medical-assistant/session`, {
+  await fetch(apiUrl("/api/medical-assistant/session"), {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -34,17 +29,12 @@ export async function sendMedicalAssistantMessage(
   history = [],
   { bookingState = null, selection = null, forceBooking = false } = {}
 ) {
-  const api = getApiBase();
-  if (!api) {
-    throw new Error("VITE_API_URL is not configured");
-  }
-
   const token = localStorage.getItem("token");
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000);
 
   try {
-    const res = await fetch(`${api}/api/medical-assistant/chat`, {
+    const res = await fetch(apiUrl("/api/medical-assistant/chat"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,13 +63,10 @@ export async function sendMedicalAssistantMessage(
 }
 
 export async function bookMedicalAssistantSlot({ doctorId, doctorName, specialization, date, time, visitMode }) {
-  const api = getApiBase();
-  if (!api) throw new Error("VITE_API_URL is not configured");
-
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Sign in to book an appointment.");
 
-  const res = await fetch(`${api}/api/medical-assistant/book`, {
+  const res = await fetch(apiUrl("/api/medical-assistant/book"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -4,7 +4,11 @@ const User = require("../Models/UserModel");
 // Get User Profile (Protected Route)
 const getUserProfile = async (req, res) => {
   try {
-    console.log("User ID from token:", req.user.id); // Debugging
+    if (req.user?.role === "doctor") {
+      return res.status(403).json({
+        message: "Doctor accounts use /api/doctor/profile, not user profile.",
+      });
+    }
 
     // Fetch user using the ID extracted from JWT
     const user = await User.findById(req.user.id).select("-password");

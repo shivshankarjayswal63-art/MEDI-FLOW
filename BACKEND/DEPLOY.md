@@ -114,6 +114,17 @@ Doctor emails cannot use `/login`; staff emails cannot use `/login-doctor`. JWT 
 
 **Patient health profile + report AI tags (optional):** run `supabase/migrations/004_patient_health_profile.sql` for allergies/chronic conditions on `users` and `report_summary` / `ai_tags` on `medical_reports`.
 
+**Doctor verification (recommended):** run `supabase/migrations/005_doctor_approval.sql` so new doctor sign-ups stay **pending** until a platform admin approves them under **User Admin → Doctor verification** (`/Doctor-Approvals`). Only **approved** doctors appear in `/api/doctor/public`, booking, and the medical assistant.
+
+### Custom domain + floating AI chat
+
+The frontend can proxy API calls on the **same domain** (`/api/*` → `medi-flow-api.vercel.app`) so the **AI Health Assistant** widget works without CORS issues. **Redeploy the frontend** after pulling latest `frontend/vercel.json`.
+
+If you set `VITE_API_URL` to the backend host directly, also set on the **API** project:
+
+- `FRONTEND01=https://your-custom-domain` (no trailing slash), **or**
+- `CORS_ORIGIN_SUFFIX=zayacodehub.in` (allows `https://mediflow.zayacodehub.in` and other subdomains)
+
 ---
 
 ## Option B — Render (good for long-running Express)

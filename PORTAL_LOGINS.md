@@ -2,6 +2,8 @@
 
 All staff accounts use **`/login`**. Doctors use **`/login-doctor`** only.
 
+The app enforces this on both **frontend** (role guards + login pages) and **API** (JWT role resolved from email + portal rules). Wrong portal → clear error or redirect to the correct dashboard.
+
 After **`npm run db:seed`** in `BACKEND` (with Supabase configured):
 
 | Portal | Login URL | Email | Password |
@@ -24,6 +26,12 @@ npm run admin:ensure
 Then sign in at **`/login`** → **`/User-Dashboard`**.
 
 `zayacodehub@gmail.com` is mapped to platform admin when that user exists (via `admin:ensure`).
+
+### Doctor verification (new registrations)
+
+Self-registered doctors are **pending** until a platform admin approves them at **`/Doctor-Approvals`** (sidebar: **Doctor verification**). Until approved they **cannot sign in** and do **not** appear to patients. Demo seed doctors are pre-approved.
+
+Run `supabase/migrations/005_doctor_approval.sql` in Supabase if you have not already.
 
 ### Dashboard paths
 

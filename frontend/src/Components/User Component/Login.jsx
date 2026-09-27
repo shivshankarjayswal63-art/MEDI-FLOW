@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { routeForRole, resolveLoginRole } from "../../utils/authRoutes";
+import {
+  routeForRole,
+  resolveLoginRole,
+  isDoctorRole,
+  isMainPortalRole,
+} from "../../utils/authRoutes";
 import { setAuthSession, isAuthenticated, getStoredRole, getDashboardPath } from "../../utils/auth";
-import { isDoctorRole } from "../../utils/authRoutes";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -96,7 +100,11 @@ function Login() {
         response.data.user?.role
       );
       if (isDoctorRole(role)) {
-        setError("Use Doctor Login for this account.");
+        setError("This account is a doctor profile. Use Doctor Login (/login-doctor).");
+        return;
+      }
+      if (!isMainPortalRole(role)) {
+        setError("This account cannot use the patient/staff login. Try Doctor Login.");
         return;
       }
       setAuthSession({

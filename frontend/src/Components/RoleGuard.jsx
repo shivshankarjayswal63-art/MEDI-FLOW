@@ -2,7 +2,7 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 import { getDashboardPath, getStoredRole, isAuthenticated } from "../utils/auth";
-import { loginPathForRole } from "../utils/authRoutes";
+import { defaultLoginPathForAllowedRoles, loginPathForRole } from "../utils/authRoutes";
 
 /**
  * @param {string[]} allowedRoles - e.g. ['patient'] or ['user_admin']
@@ -24,12 +24,13 @@ export default function RoleGuard({ children, allowedRoles, loginPath }) {
     );
   }
 
+  const signInPath = loginPath || defaultLoginPathForAllowedRoles(allowedRoles);
+
   if (!isAuthenticated()) {
-    const fallback = loginPath || "/login";
-    return <Navigate to={fallback} replace />;
+    return <Navigate to={signInPath} replace />;
   }
   if (!role) {
-    return <Navigate to={loginPath || "/login"} replace />;
+    return <Navigate to={signInPath} replace />;
   }
   if (allowedRoles?.length && !allowedRoles.includes(role)) {
     return <Navigate to={getDashboardPath(role)} replace />;

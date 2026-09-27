@@ -59,3 +59,22 @@ export function isDoctorRole(role) {
 export function isStaffRole(role) {
   return [ROLES.USER_ADMIN, ROLES.PHARMACY_ADMIN, ROLES.APPOINTMENT_ADMIN].includes(role);
 }
+
+/** Roles allowed on /login (not /login-doctor). */
+export const MAIN_LOGIN_ROLES = [
+  ROLES.PATIENT,
+  ROLES.USER_ADMIN,
+  ROLES.PHARMACY_ADMIN,
+  ROLES.APPOINTMENT_ADMIN,
+];
+
+export function isMainPortalRole(role) {
+  return MAIN_LOGIN_ROLES.includes(role);
+}
+
+export function defaultLoginPathForAllowedRoles(allowedRoles) {
+  if (allowedRoles?.length === 1 && allowedRoles[0] === ROLES.DOCTOR) {
+    return LOGIN_PATH_BY_ROLE[ROLES.DOCTOR];
+  }
+  return "/login";
+}

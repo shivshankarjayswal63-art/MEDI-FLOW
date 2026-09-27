@@ -1,4 +1,5 @@
 const Doctor = require("../Models/DoctorManagement/doctorModel");
+const { filterApprovedDoctors } = require("./doctorApproval");
 const { getSupabase } = require("../config/supabase");
 const { useSupabase } = require("../config/supabase");
 
@@ -74,8 +75,8 @@ async function listDoctorsForChat() {
   if (doctorsCache.list.length && now - doctorsCache.at < CACHE_MS) {
     return doctorsCache.list;
   }
-  const doctors = await Doctor.find();
-  const list = (Array.isArray(doctors) ? doctors : []).map((d) => ({
+  const doctors = filterApprovedDoctors(await Doctor.find());
+  const list = doctors.map((d) => ({
     id: d._id || d.id,
     name: d.name,
     specialization: d.specialization,
@@ -563,6 +564,10 @@ async function handleBookingRequest(message, userId, patientContext, history = [
   return result;
 }
 
+function invalidateDoctorsCache() {
+  doctorsCache = { at: 0, list: [] };
+}
+
 module.exports = {
   detectBookingIntent,
   shouldRunBookingFlow,
@@ -573,4 +578,5 @@ module.exports = {
   handleBookingRequest,
   listDoctorsForChat,
   suggestNextSlotsForDoctor,
+  invalidateDoctorsCache,
 };

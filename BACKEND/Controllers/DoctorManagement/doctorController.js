@@ -1,5 +1,9 @@
-const mongoose = require("mongoose");
 const Doctor = require("../../Models/DoctorManagement/doctorModel");
+const {
+  filterApprovedDoctors,
+  isDoctorVisibleToPatients,
+  getApprovalStatus,
+} = require("../../lib/doctorApproval");
 
 // Get Doctor Profile by ID
 const getDoctorProfile = async (req, res) => {
@@ -28,12 +32,16 @@ function stripDoctorPassword(doc) {
   return d;
 }
 
-// Get All Doctors (passwords stripped)
+// Platform admin: all doctors including pending/rejected
 const getAllDoctors = async (req, res) => {
   try {
     const doctors = await Doctor.find();
     const list = Array.isArray(doctors)
-      ? doctors.map((doc) => stripDoctorPassword(doc))
+      ? doctors.map((doc) => {
+          const d = stripDoctorPassword(doc);
+          d.approvalStatus = getApprovalStatus(doc);
+          return d;
+        })
       : [];
     res.status(200).json(list);
   } catch (err) {
@@ -46,7 +54,20 @@ const getAllDoctors = async (req, res) => {
   }
 };
 
-const getPublicDoctors = getAllDoctors;
+const getPublicDoctors = async (req, res) => {
+  try {
+    const doctors = filterApprovedDoctors(await Doctor.find());
+    const list = doctors.map((doc) => stripDoctorPassword(doc));
+    res.status(200).json(list);
+  } catch (err) {
+    console.error("getPublicDoctors:", err.message);
+    const hint =
+      !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? "Backend missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in Vercel env."
+        : undefined;
+    res.status(500).json({ message: "Server Error", hint, detail: err.message });
+  }
+};
 
 // Get Doctor by ID
 const getDoctorById = async (req, res) => {
@@ -57,7 +78,12 @@ const getDoctorById = async (req, res) => {
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
-    res.status(200).json(doctor);
+    const role = req.user?.role;
+    const self = req.user?.id && String(req.user.id) === String(id);
+    if (!self && role !== "user_admin" && !isDoctorVisibleToPatients(doctor)) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+    res.status(200).json(stripDoctorPassword(doctor));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server Error" });

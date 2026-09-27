@@ -3,6 +3,8 @@ const { getPatientHealthContext } = require("../lib/patientHealthContext");
 const { loadChatSession, appendChatMessages, clearChatSession } = require("../lib/medicalAssistantChatStore");
 const User = require("../Models/UserModel");
 const Appointment = require("../Models/AppoinmentModel");
+const Doctor = require("../Models/DoctorManagement/doctorModel");
+const { assertDoctorBookable } = require("../lib/doctorApproval");
 
 exports.session = async (req, res) => {
   try {
@@ -90,6 +92,11 @@ exports.book = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    const bookable = await assertDoctorBookable(Doctor, doctorId);
+    if (!bookable.ok) {
+      return res.status(bookable.status).json({ message: bookable.message });
     }
 
     const appointmentCount = await Appointment.countDocuments();

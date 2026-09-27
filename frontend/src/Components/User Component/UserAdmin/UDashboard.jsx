@@ -70,6 +70,8 @@ function UDashboard() {
     newPatients: 0,
     appointmentsToday: 0,
     criticalCases: 0,
+    pendingDoctorApprovals: 0,
+    approvedDoctors: 0,
   });
   const [recentPatients, setRecentPatients] = useState([]);
 
@@ -297,25 +299,30 @@ function UDashboard() {
                 boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                 height: "100%",
                 transition: "transform 0.3s ease",
+                cursor: "pointer",
                 "&:hover": { transform: "translateY(-5px)" }
               }}
+              onClick={() => navigate("/Doctor-Approvals")}
             >
               <CardContent>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <Box>
                     <Typography color="textSecondary" variant="body2" sx={{ mb: 1 }}>
-                      Critical Cases
+                      Pending doctor approvals
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 600, color: "#f44336" }}>
-                      {stats.criticalCases}
+                      {stats.pendingDoctorApprovals ?? 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {stats.approvedDoctors ?? 0} verified on platform
                     </Typography>
                   </Box>
                   <Avatar sx={{ bgcolor: "#f4433620", color: "#f44336", width: 56, height: 56 }}>
                     <LocalHospitalIcon />
                   </Avatar>
                 </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                  <span style={{ color: "#4caf50", fontWeight: 500 }}>↓ 2</span> from last week
+                <Typography variant="body2" color="primary" sx={{ mt: 2, fontWeight: 500 }}>
+                  Review registrations →
                 </Typography>
               </CardContent>
             </Card>

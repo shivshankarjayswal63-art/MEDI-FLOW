@@ -267,11 +267,11 @@ async function main() {
   const byEmail = (email) => insertedUsers.find((u) => u.email === email);
 
   const doctors = [
-    { name: "Dr. Admin Kumar", email: "doctoradmin@gmail.com", password: doctorHash, phone: "0112000001", specialization: "General Practice", qualifications: ["MBBS", "MD"], experience: 15, address: "Colombo 03", availability: "Mon-Fri 9-17", gender: "Male", date_of_birth: "1980-04-10" },
-    { name: "Dr. Nimal Cardio", email: "dr.cardio@demo.com", password: doctorHash, phone: "0112000002", specialization: "Cardiology", qualifications: ["MBBS", "FRCP"], experience: 12, address: "Colombo 07", availability: "Mon-Thu 8-16", gender: "Male", date_of_birth: "1978-06-15" },
-    { name: "Dr. Sara GP", email: "dr.gp@demo.com", password: doctorHash, phone: "0112000003", specialization: "General Practice", qualifications: ["MBBS"], experience: 8, address: "Kandy", availability: "Tue-Sat 10-18", gender: "Female", date_of_birth: "1985-12-01" },
-    { name: "Dr. Priya Peds", email: "dr.peds@demo.com", password: doctorHash, phone: "0112000004", specialization: "Pediatrics", qualifications: ["MBBS", "DCH"], experience: 10, address: "Galle", availability: "Mon-Fri 9-15", gender: "Female", date_of_birth: "1983-08-20" },
-    { name: "Dr. Ravi Derm", email: "dr.derm@demo.com", password: doctorHash, phone: "0112000005", specialization: "Dermatology", qualifications: ["MBBS", "DVD"], experience: 9, address: "Colombo 05", availability: "Wed-Sun 11-19", gender: "Male", date_of_birth: "1987-02-28" },
+    { name: "Dr. Admin Kumar", email: "doctoradmin@gmail.com", password: doctorHash, phone: "0112000001", specialization: "General Practice", qualifications: ["MBBS", "MD"], experience: 15, address: "Colombo 03", availability: "Mon-Fri 9-17", gender: "Male", date_of_birth: "1980-04-10", approval_status: "approved" },
+    { name: "Dr. Nimal Cardio", email: "dr.cardio@demo.com", password: doctorHash, phone: "0112000002", specialization: "Cardiology", qualifications: ["MBBS", "FRCP"], experience: 12, address: "Colombo 07", availability: "Mon-Thu 8-16", gender: "Male", date_of_birth: "1978-06-15", approval_status: "approved" },
+    { name: "Dr. Sara GP", email: "dr.gp@demo.com", password: doctorHash, phone: "0112000003", specialization: "General Practice", qualifications: ["MBBS"], experience: 8, address: "Kandy", availability: "Tue-Sat 10-18", gender: "Female", date_of_birth: "1985-12-01", approval_status: "approved" },
+    { name: "Dr. Priya Peds", email: "dr.peds@demo.com", password: doctorHash, phone: "0112000004", specialization: "Pediatrics", qualifications: ["MBBS", "DCH"], experience: 10, address: "Galle", availability: "Mon-Fri 9-15", gender: "Female", date_of_birth: "1983-08-20", approval_status: "approved" },
+    { name: "Dr. Ravi Derm", email: "dr.derm@demo.com", password: doctorHash, phone: "0112000005", specialization: "Dermatology", qualifications: ["MBBS", "DVD"], experience: 9, address: "Colombo 05", availability: "Wed-Sun 11-19", gender: "Male", date_of_birth: "1987-02-28", approval_status: "approved" },
   ];
 
   const { data: insertedDoctors, error: docErr } = await supabase.from("doctors").insert(doctors).select();

@@ -35,6 +35,7 @@ const Registration = lazy(() => import("./Components/User Component/Registration
 const UDashboard = lazy(() => import("./Components/User Component/UserAdmin/UDashboard"));
 const ForgotPassword = lazy(() => import("./Components/User Component/UserProfile/ForgotPassword"));
 const AddNewUser = lazy(() => import("./Components/User Component/UserAdmin/AddNewUser"));
+const DoctorApprovals = lazy(() => import("./Components/User Component/UserAdmin/DoctorApprovals"));
 
 const PDashboard = lazy(() => import("./Components/Pharmacy Component/PDashboard"));
 const StockAnalytics = lazy(() => import("./Components/Pharmacy Component/StockAnalytics"));
@@ -172,6 +173,14 @@ function App() {
             element={
               <RoleGuard allowedRoles={["user_admin"]}>
                 <AddNewUser />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/Doctor-Approvals"
+            element={
+              <RoleGuard allowedRoles={["user_admin"]}>
+                <DoctorApprovals />
               </RoleGuard>
             }
           />
