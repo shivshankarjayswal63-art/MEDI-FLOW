@@ -1,4 +1,5 @@
 import { apiUrl } from "./apiBase";
+import { getUserFacingApiError } from "./apiErrors";
 
 /**
  * @param {string} message
@@ -46,19 +47,19 @@ export async function sendMedicalAssistantMessage(
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      if (res.status === 404) {
-        throw new Error(
-          "Medical assistant API not found. Redeploy the BACKEND on Vercel (latest main) and check VITE_API_URL."
-        );
-      }
       const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.message || `Server responded with ${res.status}`);
+      const err = new Error(errBody.message || "Request failed");
+      err.response = { status: res.status, data: errBody };
+      throw err;
     }
 
     return res.json();
   } catch (err) {
     clearTimeout(timeoutId);
-    throw err;
+    const friendly = getUserFacingApiError(err);
+    const wrapped = new Error(friendly);
+    wrapped.cause = err;
+    throw wrapped;
   }
 }
 

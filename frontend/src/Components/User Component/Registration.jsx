@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { apiUrl } from "../../utils/apiBase";
 import Swal from "sweetalert2";
 import {
   Box,
@@ -39,6 +40,8 @@ function Registration() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -109,7 +112,7 @@ function Registration() {
     const { name, email, password } = formData;
 
     try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
+            await axios.post(apiUrl("/api/auth/register"), {
         name,
         email,
         password,
@@ -132,7 +135,7 @@ function Registration() {
       });
 
       setTimeout(() => {
-        navigate("/login");
+        navigate("/login", returnTo ? { state: { returnTo } } : undefined);
       }, 2500);
     } catch (error) {
       Swal.fire({

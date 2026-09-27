@@ -43,6 +43,7 @@ import {
 } from "chart.js";
 import { Line, Bar, Doughnut } from "react-chartjs-2";
 import axios from "axios";
+import { apiUrl } from "../../../utils/apiBase";
 import { IconButton } from "@mui/material";
 
 
@@ -82,8 +83,8 @@ function UDashboard() {
       try {
         setLoading(true);
         const [summaryRes, usersRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/dashboard/summary?portal=user`, { headers }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/users`, { headers }),
+          axios.get(apiUrl("/api/dashboard/summary?portal=user"), { headers }),
+          axios.get(apiUrl("/api/users"), { headers }),
         ]);
         setStats(summaryRes.data);
         const users = usersRes.data || [];

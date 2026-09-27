@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Nav from "../Nav Component/Nav";
 import { usePatientPortal } from "../Patient Component/PatientPortalContext";
 import axios from "axios";
+import { apiUrl } from "../../utils/apiBase";
 import { Box, Container, Grid, Card, CardContent, Typography, Chip, Button, TextField, Avatar } from "@mui/material";
 import { brand } from "../../theme/brand";
 import EmptyState from "../EmptyState";
@@ -15,7 +16,7 @@ function FindADoctor() {
 
   useEffect(() => {
     axios
-      .get(`${import.meta.env.VITE_API_URL}/api/doctor/public`)
+      .get(apiUrl("/api/doctor/public"))
       .then((r) => setDoctors(r.data || []))
       .catch(() => setDoctors([]))
       .finally(() => setLoading(false));

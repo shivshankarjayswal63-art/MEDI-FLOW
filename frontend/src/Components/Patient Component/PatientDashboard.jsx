@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import axios from "axios";
+import { apiUrl } from "../../utils/apiBase";
+import { getUserFacingApiError } from "../../utils/apiErrors";
 
 import {
 
@@ -188,25 +190,9 @@ function PatientDashboard() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    const api = import.meta.env.VITE_API_URL;
-
-
-
-    if (!api) {
-
-      setLoadError("VITE_API_URL is not configured.");
-
-      setLoading(false);
-
-      return;
-
-    }
-
-
-
     axios
 
-      .get(`${api}/api/dashboard/summary?portal=patient`, { headers })
+      .get(apiUrl("/api/dashboard/summary?portal=patient"), { headers })
 
       .then((r) => {
 
@@ -229,11 +215,10 @@ function PatientDashboard() {
         }
 
         setLoadError(
-
-          err.response?.data?.message ||
-
-            "Could not load your dashboard. Redeploy the API and try signing in again."
-
+          getUserFacingApiError(
+            err,
+            "We could not load your dashboard. Please refresh the page or sign in again."
+          )
         );
 
       })

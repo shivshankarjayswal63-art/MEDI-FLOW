@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { apiUrl } from "../../utils/apiBase";
 import Swal from "sweetalert2";
 import CircularProgress from "@mui/material/CircularProgress";
 import { usePatientPortal } from "../Patient Component/PatientPortalContext";
@@ -87,7 +88,7 @@ function BookAppointment() {
       console.log("BookAppointment: Token found, fetching user profile...");
       setIsAuthenticated(true);
       axios
-  .get(`${import.meta.env.VITE_API_URL}/api/users/profile`, {
+  .get(apiUrl("/api/users/profile"), {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((response) => {
@@ -121,7 +122,7 @@ function BookAppointment() {
     console.log("BookAppointment: Fetching doctors...");
     const fetchDoctors = async () => {
       try {
-  const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/doctor/public`);
+  const response = await axios.get(apiUrl("/api/doctor/public"));
         console.log("BookAppointment: Doctors fetched:", response.data);
         setDoctors(response.data);
       } catch (error) {
@@ -232,7 +233,7 @@ function BookAppointment() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-  `${import.meta.env.VITE_API_URL}/api/appoinment`,
+        apiUrl("/api/appoinment"),
         {
           ...input,
           doctor_id: input.doctor_id,

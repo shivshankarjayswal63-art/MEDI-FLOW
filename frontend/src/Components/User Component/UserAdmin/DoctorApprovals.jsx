@@ -24,7 +24,8 @@ import {
   Alert,
 } from "@mui/material";
 
-const API = import.meta.env.VITE_API_URL;
+import { apiUrl } from "../../../utils/apiBase";
+import { getUserFacingApiError } from "../../../utils/apiErrors";
 
 function statusChip(status) {
   const s = (status || "approved").toLowerCase();
@@ -53,12 +54,12 @@ function DoctorApprovals() {
     try {
       const url =
         tab === 0
-          ? `${API}/api/admin/doctors/pending`
-          : `${API}/api/admin/doctors`;
+          ? apiUrl("/api/admin/doctors/pending")
+          : apiUrl("/api/admin/doctors");
       const res = await axios.get(url, { headers: headers() });
       setDoctors(res.data || []);
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load doctors.");
+      setError(getUserFacingApiError(e, "Could not load doctors. Please try again."));
       setDoctors([]);
     } finally {
       setLoading(false);
@@ -73,13 +74,13 @@ function DoctorApprovals() {
     setActionLoading(id);
     try {
       await axios.patch(
-        `${API}/api/admin/doctors/${id}/approval`,
+        apiUrl(`/api/admin/doctors/${id}/approval`),
         { status, rejectionReason },
         { headers: headers() }
       );
       await load();
     } catch (e) {
-      setError(e.response?.data?.message || "Action failed.");
+      setError(getUserFacingApiError(e, "That action could not be completed. Please try again."));
     } finally {
       setActionLoading(null);
       setRejectOpen(false);

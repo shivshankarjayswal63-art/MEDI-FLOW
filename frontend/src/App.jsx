@@ -125,7 +125,11 @@ function App() {
           <Route
             path="/Book-Appointment"
             element={
-              <PatientPortalOrPublic>
+              <PatientPortalOrPublic
+                requirePatientAuth
+                gateTitle="Sign in to book an appointment"
+                gateMessage="Create a patient account or log in to schedule appointments with verified MEDI FLOW doctors."
+              >
                 <BookAppointent />
               </PatientPortalOrPublic>
             }
@@ -133,7 +137,11 @@ function App() {
           <Route
             path="/request-consultation"
             element={
-              <PatientPortalOrPublic>
+              <PatientPortalOrPublic
+                requirePatientAuth
+                gateTitle="Sign in to request a consultation"
+                gateMessage="Create a patient account or log in to request a consultation. We need your profile to match you with the right doctor."
+              >
                 <RequestConsultation />
               </PatientPortalOrPublic>
             }

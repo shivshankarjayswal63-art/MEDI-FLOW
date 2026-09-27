@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { apiUrl } from "../../utils/apiBase";
+import { getUserFacingApiError } from "../../utils/apiErrors";
 import { useNavigate } from "react-router-dom";
 import { Box, TextField, Button, Typography, CircularProgress, MenuItem } from "@mui/material";
 
@@ -31,14 +33,14 @@ function DoctorRegistration() {
     setError("");
 
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register-doctor`, formData);
+      const res = await axios.post(apiUrl("/api/auth/register-doctor"), formData);
       alert(
         res.data?.message ||
           "Registration submitted. A platform admin will verify your profile before you can sign in."
       );
       navigate("/login-doctor");
     } catch (error) {
-      setError(error.response?.data?.message || "Registration failed. Please try again.");
+      setError(getUserFacingApiError(error, "Registration failed. Please try again."));
       console.error("Registration error:", error);
     } finally {
       setLoading(false);

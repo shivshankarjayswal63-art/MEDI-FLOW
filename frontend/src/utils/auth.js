@@ -1,4 +1,4 @@
-import { routeForRole, inferRoleFromEmail, ROLES } from "./authRoutes";
+import { routeForRole, inferRoleFromEmail, ROLES, isPatientRole } from "./authRoutes";
 import { getRoleFromToken, getEmailFromToken } from "./jwtRole";
 
 export const ROLE_LABELS = {
@@ -11,6 +11,10 @@ export const ROLE_LABELS = {
 
 export function isAuthenticated() {
   return Boolean(localStorage.getItem("token"));
+}
+
+export function isPatientSession() {
+  return isAuthenticated() && isPatientRole(getStoredRole());
 }
 
 export function getStoredRole() {

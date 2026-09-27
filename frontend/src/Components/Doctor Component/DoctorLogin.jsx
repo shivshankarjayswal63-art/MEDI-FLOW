@@ -13,6 +13,8 @@ import {
   getStoredRole,
   getDashboardPath,
 } from "../../utils/auth";
+import { apiUrl } from "../../utils/apiBase";
+import { getUserFacingApiError } from "../../utils/apiErrors";
 import {
   Box,
   TextField,
@@ -88,10 +90,10 @@ function DoctorLogin() {
     setError("");
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/login-doctor`,
-        { ...formData, email: normalizedEmail }
-      );
+      const response = await axios.post(apiUrl("/api/auth/login-doctor"), {
+        ...formData,
+        email: normalizedEmail,
+      });
 
       const { token, doctor, role: apiRole } = response.data;
       const role = apiRole || ROLES.DOCTOR;
@@ -110,11 +112,9 @@ function DoctorLogin() {
 
       navigate(routeForRole(role));
     } catch (error) {
-      if (error.response) {
-        setError(error.response.data.message || "Invalid email or password.");
-      } else {
-        setError("An error occurred. Please try again later.");
-      }
+      setError(
+        getUserFacingApiError(error, "Sign-in failed. Check your email and password.")
+      );
       console.error("Login error:", error);
     } finally {
       setLoading(false);

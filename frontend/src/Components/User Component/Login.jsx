@@ -5,9 +5,12 @@ import {
   resolveLoginRole,
   isDoctorRole,
   isMainPortalRole,
+  isPatientRole,
 } from "../../utils/authRoutes";
 import { setAuthSession, isAuthenticated, getStoredRole, getDashboardPath } from "../../utils/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { apiUrl } from "../../utils/apiBase";
+import { getUserFacingApiError } from "../../utils/apiErrors";
 import Swal from "sweetalert2";
 import {
   Box,
@@ -34,6 +37,8 @@ function Login() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo;
 
   useEffect(() => {
     if (!isAuthenticated()) return;
@@ -43,8 +48,12 @@ function Login() {
       navigate("/login-doctor", { replace: true });
       return;
     }
+    if (returnTo && isPatientRole(role)) {
+      navigate(returnTo, { replace: true });
+      return;
+    }
     navigate(getDashboardPath(role), { replace: true });
-  }, [navigate]);
+  }, [navigate, returnTo]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -85,15 +94,9 @@ function Login() {
     setFormData(credentials);
     if (!validateCredentials(credentials)) return;
 
-    const apiBase = import.meta.env.VITE_API_URL;
-    if (!apiBase) {
-      setError("App misconfigured: VITE_API_URL is missing. Set it in Vercel env and redeploy.");
-      return;
-    }
-
     setLoading(true);
     try {
-      const response = await axios.post(`${apiBase}/api/auth/login`, credentials);
+      const response = await axios.post(apiUrl("/api/auth/login"), credentials);
       const role = resolveLoginRole(
         credentials.email,
         response.data.role,
@@ -131,17 +134,20 @@ function Login() {
       });
 
       setTimeout(() => {
-        navigate(routeForRole(role));
+        if (returnTo && isPatientRole(role)) {
+          navigate(returnTo);
+        } else {
+          navigate(routeForRole(role));
+        }
       }, 800);
     } catch (error) {
-      const msg =
-        error.response?.data?.message ||
-        (error.message === "Network Error"
-          ? "Cannot reach API. Check VITE_API_URL on Vercel and that medi-flow-api is running."
-          : "Login failed. Please check your credentials.");
+      const msg = getUserFacingApiError(
+        error,
+        "Sign-in failed. Please check your email and password and try again."
+      );
       Swal.fire({
         icon: "error",
-        title: "Login Failed",
+        title: "Sign-in unsuccessful",
         text: msg,
       });
     } finally {

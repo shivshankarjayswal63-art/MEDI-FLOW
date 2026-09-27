@@ -24,9 +24,10 @@ import MinimizeIcon from "@mui/icons-material/Minimize";
 import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import { useNavigate } from "react-router-dom";
 import { sendMedicalAssistantMessage } from "../../utils/medicalAssistantApi";
-import { isBookingMessage } from "../../utils/bookingIntent";
+import { isBookingMessage, isConsultationIntent, requiresPatientCareIntent } from "../../utils/bookingIntent";
 import { loadLocalMedicalChat, saveLocalMedicalChat } from "../../utils/medicalAssistantChatStorage";
-import { isAuthenticated } from "../../utils/auth";
+import { isAuthenticated, isPatientSession } from "../../utils/auth";
+import { getUserFacingApiError } from "../../utils/apiErrors";
 
 const HealthChatBot = ({ open, onClose }) => {
   const navigate = useNavigate();
@@ -49,9 +50,9 @@ const HealthChatBot = ({ open, onClose }) => {
   // Suggested responses for quick access
   const suggestedResponses = [
     "Book appointment",
+    "Request a consultation",
     "I have chest pain",
     "Feeling dizzy",
-    "Stomach hurts",
     "Summarize my health history",
   ];
 
@@ -79,19 +80,11 @@ const HealthChatBot = ({ open, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const formatChatError = (err) => {
-    if (err?.name === "AbortError") {
-      return "The assistant took too long. Try again or open Medical assistant from the patient menu.";
-    }
-    const msg = err?.message || "";
-    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
-      return "Cannot reach the API. Redeploy the frontend (latest) or set VITE_API_URL and FRONTEND01 on Vercel.";
-    }
-    if (msg.includes("VITE_API_URL")) {
-      return "API URL is not configured. Redeploy the frontend after setting env vars.";
-    }
-    return msg || "Something went wrong. Please try again.";
-  };
+  const formatChatError = (err) =>
+    getUserFacingApiError(
+      err,
+      "The assistant could not respond right now. Please try again in a moment."
+    );
 
   const submitMessage = async (rawText) => {
     const text = String(rawText || "").trim();
@@ -109,17 +102,23 @@ const HealthChatBot = ({ open, onClose }) => {
       return;
     }
 
-    if (isBookingMessage(text)) {
-      if (isAuthenticated()) {
-        navigate("/medical-assistant", { state: { autoMessage: text } });
-        if (onClose) onClose();
+    if (requiresPatientCareIntent(text)) {
+      if (isAuthenticated() && isPatientSession()) {
+        if (isBookingMessage(text)) {
+          navigate("/medical-assistant", { state: { autoMessage: text } });
+          if (onClose) onClose();
+        } else if (isConsultationIntent(text)) {
+          navigate("/request-consultation");
+          if (onClose) onClose();
+        }
       } else {
         setMessages((prev) => [
           ...prev,
           { sender: "user", text },
           {
             sender: "bot",
-            text: "Sign in as a patient to book in-app, or browse **Find a Doctor** from the menu.",
+            text:
+              "To request a consultant, book an appointment, or speak with a doctor through MEDI FLOW, please **create a patient account** or **log in** first. Use the buttons below — then try again or open Request consultation from the menu.",
           },
         ]);
       }
