@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { routeForRole, inferRoleFromEmail } from "../../utils/authRoutes";
+import { routeForRole, resolveLoginRole } from "../../utils/authRoutes";
 import { setAuthSession, isAuthenticated, getStoredRole, getDashboardPath } from "../../utils/auth";
 import { isDoctorRole } from "../../utils/authRoutes";
 import { useNavigate } from "react-router-dom";
@@ -90,10 +90,11 @@ function Login() {
     setLoading(true);
     try {
       const response = await axios.post(`${apiBase}/api/auth/login`, credentials);
-      const role =
-        response.data.role ||
-        response.data.user?.role ||
-        inferRoleFromEmail(credentials.email);
+      const role = resolveLoginRole(
+        credentials.email,
+        response.data.role,
+        response.data.user?.role
+      );
       if (isDoctorRole(role)) {
         setError("Use Doctor Login for this account.");
         return;
@@ -102,6 +103,7 @@ function Login() {
         token: response.data.token,
         role,
         userId: response.data.user?._id || response.data.user?.id,
+        email: credentials.email,
       });
 
       Swal.fire({

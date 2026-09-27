@@ -8,10 +8,13 @@ const EMAIL_ROLE_MAP = {
 };
 
 function resolveUserRole(user, email) {
+  const normalized = String(email || user?.email || "").toLowerCase().trim();
+  // Staff portal emails always win over a stale DB role (e.g. patient after bad seed).
+  const mapped = EMAIL_ROLE_MAP[normalized];
+  if (mapped) return mapped;
+
   const fromDb = user?.role || user?.Role;
   if (fromDb && USER_PORTAL_ROLES.includes(fromDb)) return fromDb;
-  const mapped = EMAIL_ROLE_MAP[String(email || user?.email || "").toLowerCase()];
-  if (mapped) return mapped;
   return "patient";
 }
 

@@ -23,7 +23,14 @@ export const LOGIN_PATH_BY_ROLE = {
 };
 
 export function inferRoleFromEmail(email) {
-  return EMAIL_ROLE_MAP[email?.toLowerCase()] || ROLES.PATIENT;
+  return EMAIL_ROLE_MAP[email?.toLowerCase()?.trim()] || ROLES.PATIENT;
+}
+
+/** Prefer staff role from email over API/DB when they disagree. */
+export function resolveLoginRole(email, apiRole, userRole) {
+  const fromEmail = inferRoleFromEmail(email);
+  if (fromEmail !== ROLES.PATIENT) return fromEmail;
+  return apiRole || userRole || ROLES.PATIENT;
 }
 
 export function routeForRole(role) {
