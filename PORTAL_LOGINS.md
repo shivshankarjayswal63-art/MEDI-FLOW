@@ -1,5 +1,7 @@
 # MEDI FLOW — portal logins
 
+**Live site:** [https://mediflow.zayacodehub.in/](https://mediflow.zayacodehub.in/)
+
 All staff accounts use **`/login`**. Doctors use **`/login-doctor`** only.
 
 The app enforces this on both **frontend** (role guards + login pages) and **API** (JWT role resolved from email + portal rules). Wrong portal → clear error or redirect to the correct dashboard.
