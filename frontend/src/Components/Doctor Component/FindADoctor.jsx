@@ -4,7 +4,7 @@ import Nav from "../Nav Component/Nav";
 import axios from "axios";
 import { Box, Container, Grid, Card, CardContent, Typography, Chip, Button, TextField, Avatar } from "@mui/material";
 import { brand } from "../../theme/brand";
-import EmptyState from "../../components/EmptyState";
+import EmptyState from "../EmptyState";
 
 function FindADoctor() {
   const [doctors, setDoctors] = useState([]);

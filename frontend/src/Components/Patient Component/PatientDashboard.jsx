@@ -4,7 +4,7 @@ import Nav from "../Nav Component/Nav";
 import axios from "axios";
 import { Container, Grid, Card, CardContent, Typography, Button, Chip, Box } from "@mui/material";
 import { brand } from "../../theme/brand";
-import EmptyState from "../../components/EmptyState";
+import EmptyState from "../EmptyState";
 
 function PatientDashboard() {
   const navigate = useNavigate();

@@ -1,6 +1,6 @@
 import React from "react";
 import { Home, Users, UserPlus } from "lucide-react";
-import DashboardShell from "../../../components/DashboardShell";
+import DashboardShell from "../../DashboardShell";
 
 const menuItems = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/User-Dashboard" },
