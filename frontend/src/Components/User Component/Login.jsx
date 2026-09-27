@@ -8,7 +8,7 @@ import {
   isPatientRole,
 } from "../../utils/authRoutes";
 import { setAuthSession, isAuthenticated, getStoredRole, getDashboardPath } from "../../utils/auth";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { apiUrl } from "../../utils/apiBase";
 import { getUserFacingApiError } from "../../utils/apiErrors";
 import Swal from "sweetalert2";
@@ -23,13 +23,27 @@ import {
   Paper,
   IconButton,
   InputAdornment,
+  Chip,
+  Alert,
+  alpha,
 } from "@mui/material";
 import {
   Visibility,
   VisibilityOff,
   EmailOutlined,
   LockOutlined,
+  ArrowForward,
+  HealthAndSafety,
+  AutoAwesome,
+  Shield,
 } from "@mui/icons-material";
+import { brand } from "../../theme/brand";
+
+const featureItems = [
+  { icon: <HealthAndSafety fontSize="small" />, text: "AI-assisted symptom guidance" },
+  { icon: <AutoAwesome fontSize="small" />, text: "Book appointments in minutes" },
+  { icon: <Shield fontSize="small" />, text: "Secure patient records" },
+];
 
 function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -126,8 +140,8 @@ function Login() {
         timer: 2500,
         timerProgressBar: true,
         background: "#f0f4ff",
-        color: "#2b2c6c",
-        iconColor: "#2fb297",
+        color: brand.primary,
+        iconColor: brand.success,
         customClass: {
           popup: "swal2-rounded",
         },
@@ -140,9 +154,9 @@ function Login() {
           navigate(routeForRole(role));
         }
       }, 800);
-    } catch (error) {
+    } catch (err) {
       const msg = getUserFacingApiError(
-        error,
+        err,
         "Sign-in failed. Please check your email and password and try again."
       );
       Swal.fire({
@@ -155,82 +169,162 @@ function Login() {
     }
   };
 
+  const fieldSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 2.5,
+      bgcolor: "#f8f9ff",
+      "&:hover fieldset": { borderColor: brand.success },
+      "&.Mui-focused fieldset": { borderColor: brand.primary },
+    },
+  };
+
   return (
-    <Box sx={{ height: "100vh", display: "flex", alignItems: "center" }}>
-      <Container maxWidth="lg">
-        <Grid container spacing={2} alignItems="center" justifyContent="center">
-          {/* Logo Section */}
-          <Grid
-            item
-            xs={12}
-            md={6}
-            sx={{
-              display: { xs: "none", md: "flex" },
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <img src="/Logo.png" alt="Logo" className="h-[200px] w-auto" />
+    <Box
+      sx={{
+        minHeight: "100dvh",
+        display: "flex",
+        alignItems: "center",
+        position: "relative",
+        overflow: "hidden",
+        background: `linear-gradient(135deg, #f8f9ff 0%, #eef8ff 45%, ${alpha(brand.accent, 0.06)} 100%)`,
+      }}
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          top: -120,
+          right: -80,
+          width: 360,
+          height: 360,
+          borderRadius: "50%",
+          bgcolor: alpha(brand.accent, 0.12),
+          filter: "blur(60px)",
+          pointerEvents: "none",
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: -100,
+          left: -60,
+          width: 320,
+          height: 320,
+          borderRadius: "50%",
+          bgcolor: alpha(brand.success, 0.15),
+          filter: "blur(50px)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, position: "relative", zIndex: 1 }}>
+        <Grid container spacing={{ xs: 4, md: 6 }} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: { xs: "none", md: "block" }, pr: { md: 4 } }}>
+              <Chip
+                label="NEXT-GEN HEALTHCARE"
+                size="small"
+                sx={{
+                  mb: 2,
+                  fontWeight: 700,
+                  bgcolor: alpha(brand.accent, 0.1),
+                  color: brand.accent,
+                }}
+              />
+              <Typography
+                variant="h3"
+                sx={{
+                  fontWeight: 800,
+                  color: brand.primary,
+                  lineHeight: 1.15,
+                  mb: 2,
+                  fontSize: { md: "2.5rem", lg: "3rem" },
+                }}
+              >
+                Welcome back to{" "}
+                <Box component="span" sx={{ color: brand.accent }}>
+                  MEDI FLOW
+                </Box>
+              </Typography>
+              <Typography sx={{ color: brand.gray, mb: 4, maxWidth: 420, lineHeight: 1.7 }}>
+                Sign in to manage appointments, view results, and chat with our AI health assistant — all in one
+                place.
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {featureItems.map((item) => (
+                  <Box
+                    key={item.text}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      p: 1.5,
+                      borderRadius: 2,
+                      bgcolor: "rgba(255,255,255,0.75)",
+                      boxShadow: "0 4px 24px rgba(43,44,108,0.06)",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: alpha(brand.success, 0.15),
+                        color: brand.success,
+                      }}
+                    >
+                      {item.icon}
+                    </Box>
+                    <Typography variant="body2" sx={{ color: brand.primary, fontWeight: 500 }}>
+                      {item.text}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+            <Box sx={{ display: { xs: "flex", md: "none" }, justifyContent: "center", mb: 1 }}>
+              <img src="/Logo2.png" alt="MEDI FLOW" style={{ height: 56 }} />
+            </Box>
           </Grid>
 
-          {/* Login Form Section */}
           <Grid item xs={12} md={6}>
             <Paper
-              elevation={6}
+              elevation={0}
               sx={{
-                padding: 4,
-                borderRadius: 3,
-                maxWidth: 400,
-                margin: "0 auto",
+                p: { xs: 3, sm: 4 },
+                borderRadius: 4,
+                maxWidth: 440,
+                mx: "auto",
+                border: `1px solid ${alpha(brand.primary, 0.08)}`,
+                boxShadow: "0 24px 64px rgba(43, 44, 108, 0.12)",
+                bgcolor: "#fff",
               }}
             >
-              <Typography
-                component="h1"
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  marginBottom: 1,
-                  textAlign: "center",
-                  color: "#1976d2",
-                }}
-              >
-                Welcome
-              </Typography>
-              <Typography
-                component="h2"
-                variant="h5"
-                sx={{
-                  fontWeight: 500,
-                  marginBottom: 3,
-                  textAlign: "center",
-                  color: "#1976d2",
-                }}
-              >
-                MEDI FLOW
-              </Typography>
+              <Box sx={{ textAlign: "center", mb: 3 }}>
+                <Box sx={{ display: { xs: "none", sm: "block" }, mb: 2 }}>
+                  <img src="/Logo2.png" alt="" style={{ height: 48 }} />
+                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: brand.primary }}>
+                  Patient & staff sign in
+                </Typography>
+                <Typography variant="body2" sx={{ color: brand.gray, mt: 0.5 }}>
+                  Use your MEDI FLOW account credentials
+                </Typography>
+              </Box>
 
               {error && (
-                <Typography
-                  color="error"
-                  sx={{
-                    width: "100%",
-                    textAlign: "center",
-                    marginBottom: 2,
-                  }}
-                >
+                <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
                   {error}
-                </Typography>
+                </Alert>
               )}
 
-              <Box
-                component="form"
-                onSubmit={handleSubmit}
-                sx={{ width: "100%" }}
-              >
+              <Box component="form" onSubmit={handleSubmit} noValidate>
                 <TextField
                   fullWidth
                   margin="normal"
-                  label="Email"
+                  label="Email address"
                   name="email"
                   type="email"
                   autoComplete="email"
@@ -238,10 +332,11 @@ function Login() {
                   onChange={handleChange}
                   onInput={handleChange}
                   placeholder="patient1@demo.com"
+                  sx={fieldSx}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <EmailOutlined color="action" />
+                        <EmailOutlined sx={{ color: brand.gray }} />
                       </InputAdornment>
                     ),
                   }}
@@ -257,10 +352,11 @@ function Login() {
                   onChange={handleChange}
                   onInput={handleChange}
                   placeholder="Enter your password"
+                  sx={fieldSx}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LockOutlined color="action" />
+                        <LockOutlined sx={{ color: brand.gray }} />
                       </InputAdornment>
                     ),
                     endAdornment: (
@@ -268,6 +364,7 @@ function Login() {
                         <IconButton
                           onClick={() => setShowPassword(!showPassword)}
                           edge="end"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
                         >
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
@@ -281,41 +378,74 @@ function Login() {
                   fullWidth
                   variant="contained"
                   disabled={loading}
+                  endIcon={!loading && <ArrowForward />}
                   sx={{
                     mt: 3,
-                    mb: 2,
-                    backgroundColor: "#1976d2",
+                    py: 1.5,
+                    borderRadius: 999,
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    textTransform: "none",
+                    background: `linear-gradient(90deg, ${brand.primary} 0%, #4e4fa3 100%)`,
+                    boxShadow: "0 8px 24px rgba(43, 44, 108, 0.25)",
                     "&:hover": {
-                      backgroundColor: "#1565c0",
+                      background: `linear-gradient(90deg, #23245a 0%, ${brand.primary} 100%)`,
+                      boxShadow: "0 12px 28px rgba(43, 44, 108, 0.3)",
                     },
                   }}
                 >
-                  {loading ? <CircularProgress size={24} /> : "Sign In"}
+                  {loading ? <CircularProgress size={26} sx={{ color: "#fff" }} /> : "Sign in"}
                 </Button>
 
                 <Box
                   sx={{
                     display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
                     justifyContent: "space-between",
-                    width: "100%",
+                    alignItems: "center",
+                    gap: 1,
+                    mt: 2,
                   }}
                 >
                   <Button
-                    color="primary"
-                    onClick={() => navigate("/forgot-password")}
-                    sx={{ textTransform: "none" }}
+                    component={Link}
+                    to="/forgot-password"
+                    sx={{ textTransform: "none", color: brand.primary, fontWeight: 500 }}
                   >
-                    Forgot Password?
+                    Forgot password?
                   </Button>
                   <Button
-                    color="primary"
-                    onClick={() => navigate("/registration")}
-                    sx={{ textTransform: "none" }}
+                    component={Link}
+                    to="/registration"
+                    sx={{ textTransform: "none", color: brand.accent, fontWeight: 600 }}
                   >
-                    Create Account
+                    Create account
                   </Button>
                 </Box>
               </Box>
+
+              <Typography
+                variant="caption"
+                sx={{ display: "block", textAlign: "center", mt: 3, color: brand.gray }}
+              >
+                Are you a doctor?{" "}
+                <Box
+                  component={Link}
+                  to="/login-doctor"
+                  sx={{ color: brand.success, fontWeight: 700, textDecoration: "none" }}
+                >
+                  Doctor login
+                </Box>
+              </Typography>
+
+              <Button
+                component={Link}
+                to="/"
+                fullWidth
+                sx={{ mt: 2, textTransform: "none", color: brand.gray }}
+              >
+                ← Back to home
+              </Button>
             </Paper>
           </Grid>
         </Grid>

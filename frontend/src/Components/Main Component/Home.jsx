@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Nav from "../Nav Component/Nav";
 import Footer from "../Nav Component/Footer";
 import { 
@@ -96,8 +97,10 @@ function Home() {
                 
                 <div className="flex flex-wrap gap-4 mb-10">
                   <Button
+                    component={Link}
+                    to="/login"
                     variant="contained"
-                    className="!bg-gradient-to-r !from-[#2b2c6c] !to-[#4e4fa3] !text-white !px-8 !py-3 !rounded-full !text-lg !font-medium hover:!shadow-xl transition-all duration-300"
+                    className="!bg-gradient-to-r !from-[#2b2c6c] !to-[#4e4fa3] !text-white !px-8 !py-3 !rounded-full !text-lg !font-medium hover:!shadow-xl transition-all duration-300 !no-underline"
                     endIcon={<ArrowForward />}
                   >
                     Get Started
