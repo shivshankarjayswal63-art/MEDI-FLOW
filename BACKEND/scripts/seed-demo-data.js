@@ -3,8 +3,12 @@
  * Usage: npm run db:seed
  */
 require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
+const fs = require("fs");
+const path = require("path");
 const bcrypt = require("bcryptjs");
 const { getSupabase } = require("../config/supabase");
+
+const SHOWCASE_PATIENT_EMAIL = "patient1@demo.com";
 
 const ADMIN_PASS = "Admin@123";
 const PATIENT_PASS = "Patient@123";
@@ -48,6 +52,7 @@ async function clearDemo(supabase) {
   }
 
   await supabase.from("appointments").delete().like("indexno", "DEMO-%");
+  await supabase.from("appointments").delete().like("indexno", "P1-%");
   await supabase.from("rejected_appointments").delete().like("indexno", "DEMO-%");
   await supabase.from("stock").delete().like("batch_no", "DEMO-%");
 
@@ -65,6 +70,124 @@ async function clearDemo(supabase) {
 
   await supabase.from("users").delete().in("email", DEMO_USER_EMAILS);
   await supabase.from("doctors").delete().in("email", DEMO_DOCTOR_EMAILS);
+}
+
+function ensureDemoUploadFiles() {
+  const uploadsDir = path.join(__dirname, "..", "uploads");
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  const placeholder = "%PDF-1.4\n% MEDI FLOW demo report placeholder\n";
+  for (const name of [
+    "demo-blood-test.pdf",
+    "demo-xray.pdf",
+    "demo-lipid.pdf",
+    "demo-urine-analysis.pdf",
+    "demo-ecg.pdf",
+  ]) {
+    const filePath = path.join(uploadsDir, name);
+    if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, placeholder);
+  }
+}
+
+/** Full portal demo: vitals charts, analysis history, appointments, lab results */
+async function seedShowcasePatient(supabase, patient, doctors, existingAppts) {
+  if (!patient) return;
+
+  await supabase.from("vitals").delete().eq("user_id", patient.id);
+  await supabase.from("analyses").delete().eq("user_id", patient.id);
+  await supabase.from("medical_reports").delete().eq("user_id", patient.id);
+
+  const vitals = [];
+  for (let v = 0; v < 12; v++) {
+    vitals.push({
+      user_id: patient.id,
+      bp: 118 + (v % 4) * 3,
+      pulse: 68 + (v % 5),
+      sugar: 88 + (v % 6) * 4,
+      created_at: new Date(Date.now() - v * 5 * 86400000).toISOString(),
+    });
+  }
+  await supabase.from("vitals").insert(vitals);
+
+  const analysisRows = [
+    { symptoms: ["cough", "fever", "fatigue"], prediction: "Common Cold" },
+    { symptoms: ["sneezing", "itching", "runny nose"], prediction: "Allergic Rhinitis" },
+    { symptoms: ["chest pain", "shortness of breath"], prediction: "Hypertension (screening)" },
+    { symptoms: ["headache", "nausea"], prediction: "Migraine" },
+    { symptoms: ["stomach pain", "bloating"], prediction: "Gastritis" },
+    { symptoms: ["joint pain", "stiffness"], prediction: "Vitamin D deficiency" },
+    { symptoms: ["cough", "sore throat"], prediction: "Pharyngitis" },
+    { symptoms: ["dizziness", "fatigue"], prediction: "Anemia (screening)" },
+    { symptoms: ["skin rash", "itching"], prediction: "Dermatitis" },
+    { symptoms: ["back pain"], prediction: "Musculoskeletal strain" },
+  ].map((row, i) => ({
+    user_id: patient.id,
+    symptoms: row.symptoms,
+    prediction: row.prediction,
+    created_at: new Date(Date.now() - i * 3 * 86400000).toISOString(),
+  }));
+  await supabase.from("analyses").insert(analysisRows);
+
+  ensureDemoUploadFiles();
+  await supabase.from("medical_reports").insert([
+    { user_id: patient.id, file_name: "blood-test-full-panel.pdf", file_path: "uploads/demo-blood-test.pdf", file_type: "application/pdf" },
+    { user_id: patient.id, file_name: "chest-xray.pdf", file_path: "uploads/demo-xray.pdf", file_type: "application/pdf" },
+    { user_id: patient.id, file_name: "lipid-profile.pdf", file_path: "uploads/demo-lipid.pdf", file_type: "application/pdf" },
+    { user_id: patient.id, file_name: "urine-analysis.pdf", file_path: "uploads/demo-urine-analysis.pdf", file_type: "application/pdf" },
+    { user_id: patient.id, file_name: "ecg-report.pdf", file_path: "uploads/demo-ecg.pdf", file_type: "application/pdf" },
+  ]);
+
+  const showcaseAppts = [];
+  const statusPlan = ["Completed", "Completed", "Accepted", "Pending", "Pending", "Accepted", "Completed", "Pending"];
+  for (let i = 1; i <= 8; i++) {
+    const doc = doctors[i % doctors.length];
+    const daysAhead = i <= 2 ? -i * 7 : i - 2;
+    showcaseAppts.push({
+      indexno: `P1-${String(i).padStart(4, "0")}`,
+      name: patient.name,
+      address: `${patient.city || "Colombo"}, Sri Lanka`,
+      phone: patient.mobile,
+      email: patient.email,
+      doctor_name: doc.name,
+      doctor_id: doc.id,
+      specialization: doc.specialization,
+      date: new Date(Date.now() + daysAhead * 86400000).toISOString(),
+      time: `${9 + (i % 5)}:30`,
+      user_id: patient.id,
+      status: statusPlan[i - 1],
+    });
+  }
+  const { data: p1Appts, error: p1Err } = await supabase.from("appointments").insert(showcaseAppts).select();
+  if (p1Err) throw p1Err;
+
+  const allPatientAppts = [...(existingAppts || []).filter((a) => a.user_id === patient.id), ...(p1Appts || [])];
+  const forRx = allPatientAppts.slice(0, 5);
+  if (forRx.length) {
+    await supabase.from("prescriptions").insert(
+      forRx.map((a, idx) => ({
+        patient_id: patient.id,
+        doctor_id: a.doctor_id,
+        appointment_id: a.id,
+        medicine: [
+          { medicineName: "Paracetamol", dosage: "500mg", description: "Twice daily" },
+          { medicineName: "Vitamin D", dosage: "1000 IU", description: "Once daily" },
+        ],
+        notes: `Showcase prescription ${idx + 1} for ${patient.name}`,
+      }))
+    );
+    await supabase.from("diagnoses").insert(
+      forRx.slice(0, 4).map((a, idx) => ({
+        appointment_id: a.id,
+        patient_id: patient.id,
+        doctor_id: a.doctor_id,
+        symptoms: ["fever", "cough", "fatigue"].slice(0, (idx % 3) + 1),
+        assumed_illness: "Upper respiratory infection",
+        diagnosis_description: "Rest, fluids, follow-up in 1 week",
+        status: idx % 2 === 0 ? "Diagnosed" : "Pending",
+      }))
+    );
+  }
+
+  console.log(`Showcase patient seeded: ${SHOWCASE_PATIENT_EMAIL} (${analysisRows.length} analyses, ${vitals.length} vitals, ${showcaseAppts.length} extra appointments)`);
 }
 
 async function main() {
@@ -223,8 +346,9 @@ async function main() {
   await supabase.from("diagnoses").insert(diagnoses);
 
   const vitals = [];
-  for (const patient of insertedUsers.filter((u) => u.role === "patient")) {
-    for (let v = 0; v < 5; v++) {
+  for (const patient of insertedUsers.filter((u) => u.role === "patient" || u.email?.includes("@demo.com"))) {
+    if (patient.email === SHOWCASE_PATIENT_EMAIL) continue;
+    for (let v = 0; v < 3; v++) {
       vitals.push({
         user_id: patient.id,
         bp: 115 + v * 2,
@@ -234,21 +358,24 @@ async function main() {
       });
     }
   }
-  await supabase.from("vitals").insert(vitals);
+  if (vitals.length) await supabase.from("vitals").insert(vitals);
 
   await supabase.from("analyses").insert(
-    insertedUsers.filter((u) => u.role === "patient").slice(0, 5).map((u, i) => ({
-      user_id: u.id,
-      symptoms: ["cough", "fever"],
-      prediction: i % 2 === 0 ? "Common Cold" : "Allergy",
-    }))
+    insertedUsers
+      .filter((u) => u.role === "patient" && u.email !== SHOWCASE_PATIENT_EMAIL)
+      .slice(0, 4)
+      .map((u, i) => ({
+        user_id: u.id,
+        symptoms: ["cough", "fever"],
+        prediction: i % 2 === 0 ? "Common Cold" : "Allergy",
+      }))
   );
 
   await supabase.from("medical_reports").insert([
-    { user_id: p1.id, file_name: "blood-test.pdf", file_path: "uploads/demo-blood-test.pdf", file_type: "application/pdf" },
-    { user_id: p1.id, file_name: "xray-chest.pdf", file_path: "uploads/demo-xray.pdf", file_type: "application/pdf" },
     { user_id: p2.id, file_name: "lipid-panel.pdf", file_path: "uploads/demo-lipid.pdf", file_type: "application/pdf" },
   ]);
+
+  await seedShowcasePatient(supabase, p1, insertedDoctors, appts);
 
   const notifs = [];
   for (const u of insertedUsers) {
@@ -265,6 +392,7 @@ async function main() {
   console.log("Demo seed complete.");
   console.log("Admins: useradmin / pharmacyadmin / appointmentadmin @gmail.com — password:", ADMIN_PASS);
   console.log("Patients: patient1@demo.com … patient5@demo.com — password:", PATIENT_PASS);
+  console.log(`Full demo walkthrough: login as ${SHOWCASE_PATIENT_EMAIL} (dashboard, vitals, analysis history, lab results).`);
   console.log("Doctor login: doctoradmin@gmail.com — password:", DOCTOR_PASS);
 }
 
