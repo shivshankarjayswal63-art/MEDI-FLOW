@@ -36,7 +36,7 @@ exports.chat = async (req, res) => {
   try {
     const { message, history, bookingState, selection, forceBooking } = req.body || {};
     if (!message || !String(message).trim()) {
-      return res.status(400).json({ error: "message is required" });
+      return res.status(400).json({ message: "message is required" });
     }
 
     const userId = req.user?.id || null;
@@ -73,7 +73,30 @@ exports.chat = async (req, res) => {
     return res.json(result);
   } catch (err) {
     console.error("medical-assistant chat:", err);
-    return res.status(500).json({ message: "Server error" });
+    try {
+      const fallback = await processMedicalChat("hello", [], {
+        userId: null,
+        patientContext: null,
+        bookingState: null,
+        selection: null,
+        forceBooking: false,
+      });
+      return res.json({
+        ...fallback,
+        reply:
+          fallback.reply ||
+          "Hello! I'm your MEDI FLOW assistant. Ask about symptoms or say **book appointment**.",
+        source: fallback.source || "rules",
+      });
+    } catch (fallbackErr) {
+      console.error("medical-assistant chat fallback:", fallbackErr);
+      return res.json({
+        reply:
+          "Hello! I'm your MEDI FLOW assistant. Ask about symptoms, conditions, or say **book appointment**.",
+        source: "rules",
+        urgent: false,
+      });
+    }
   }
 };
 

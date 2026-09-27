@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from "react";
-import chatbotIcon from "../../assets/chatbot.png";
+import { Fab, Tooltip } from "@mui/material";
+import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
+import { brand } from "../../theme/brand";
 
 const ChatbotLauncher = ({ onOpen }) => {
   const [showHint, setShowHint] = useState(false);
   const [pulseAnimation, setPulseAnimation] = useState(false);
 
-  // Occasionally remind users they can ask health questions
   useEffect(() => {
-    // Show hint after 30 seconds of page load
     const hintTimer = setTimeout(() => {
       setShowHint(true);
-      // Hide hint after 5 seconds
       setTimeout(() => setShowHint(false), 5000);
     }, 30000);
 
-    // Pulse animation every 2 minutes to grab attention
     const pulseInterval = setInterval(() => {
       setPulseAnimation(true);
       setTimeout(() => setPulseAnimation(false), 3000);
@@ -29,26 +27,27 @@ const ChatbotLauncher = ({ onOpen }) => {
   return (
     <div className="fixed z-50 flex flex-col items-end bottom-5 right-5">
       {showHint && (
-        <div className="bg-white text-blue-600 p-3 rounded-lg shadow-lg mb-2 max-w-[200px] text-sm animate-fadeIn">
-          Ask about symptoms, diseases, or when to see a doctor!
+        <div className="bg-white text-[#2b2c6c] p-3 rounded-lg shadow-lg mb-2 max-w-[220px] text-sm border border-[#2fb29733]">
+          Smart Health assistant — ask about symptoms or book care
         </div>
       )}
-      
-      <button
-        onClick={onOpen}
-        className="relative p-0 bg-transparent border-none cursor-pointer"
-        aria-label="Open health assistant chatbot"
-      >
-        <img
-          src={chatbotIcon}
-          alt="AI Health Assistant"
-          className={`w-[12vw] max-w-[60px] min-w-[40px] ${
-            pulseAnimation 
-              ? "animate-[pulse_0.5s_3]" 
-              : "animate-[shake_3s_infinite]"
-          }`}
-        />
-      </button>
+
+      <Tooltip title="MEDI FLOW Smart Health Assistant" placement="left">
+        <Fab
+          onClick={onOpen}
+          aria-label="Open MEDI FLOW health assistant"
+          sx={{
+            bgcolor: brand.success,
+            color: "#fff",
+            boxShadow: pulseAnimation ? 6 : 3,
+            transform: pulseAnimation ? "scale(1.08)" : "scale(1)",
+            transition: "transform 0.3s ease, box-shadow 0.3s ease",
+            "&:hover": { bgcolor: "#269d85" },
+          }}
+        >
+          <HealthAndSafetyIcon fontSize="medium" />
+        </Fab>
+      </Tooltip>
     </div>
   );
 };

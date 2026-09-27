@@ -26,6 +26,9 @@ const allowedOrigins = [
   process.env.FRONTEND01,
   process.env.FRONTEND_URL,
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  "https://mediflow.zayacodehub.in",
+  "https://www.mediflow.zayacodehub.in",
+  "https://medi-flow-ten-theta.vercel.app",
   "http://localhost:5173",
   "http://localhost:5174",
   ...(process.env.CORS_EXTRA_ORIGINS || "")
@@ -38,7 +41,7 @@ function isAllowedCorsOrigin(origin) {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
   if (origin.endsWith(".vercel.app")) return true;
-  const suffix = process.env.CORS_ORIGIN_SUFFIX?.trim();
+  const suffix = (process.env.CORS_ORIGIN_SUFFIX || "zayacodehub.in").trim();
   if (suffix) {
     try {
       const host = new URL(origin).hostname;
@@ -55,7 +58,7 @@ app.use(cors({
     if (isAllowedCorsOrigin(origin)) {
       return callback(null, true);
     }
-    return callback(new Error("Not allowed by CORS"));
+    return callback(null, false);
   },
   credentials: true // if you use cookies/auth
 }));

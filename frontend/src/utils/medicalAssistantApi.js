@@ -46,14 +46,22 @@ export async function sendMedicalAssistantMessage(
     });
     clearTimeout(timeoutId);
 
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      const err = new Error(errBody.message || "Request failed");
-      err.response = { status: res.status, data: errBody };
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const err = new Error("Invalid API response");
+      err.response = { status: res.status };
       throw err;
     }
 
-    return res.json();
+    const data = await res.json();
+
+    if (!res.ok) {
+      const err = new Error(data.message || data.error || "Request failed");
+      err.response = { status: res.status, data };
+      throw err;
+    }
+
+    return data;
   } catch (err) {
     clearTimeout(timeoutId);
     const friendly = getUserFacingApiError(err);

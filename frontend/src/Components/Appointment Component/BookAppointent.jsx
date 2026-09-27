@@ -17,6 +17,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { apiUrl } from "../../utils/apiBase";
+import { fetchPublicDoctors } from "../../utils/doctorsApi";
 import Swal from "sweetalert2";
 import CircularProgress from "@mui/material/CircularProgress";
 import { usePatientPortal } from "../Patient Component/PatientPortalContext";
@@ -122,9 +123,9 @@ function BookAppointment() {
     console.log("BookAppointment: Fetching doctors...");
     const fetchDoctors = async () => {
       try {
-  const response = await axios.get(apiUrl("/api/doctor/public"));
-        console.log("BookAppointment: Doctors fetched:", response.data);
-        setDoctors(response.data);
+        const list = await fetchPublicDoctors();
+        console.log("BookAppointment: Doctors fetched:", list);
+        setDoctors(list);
       } catch (error) {
         console.error("BookAppointment: Error fetching doctors:", error);
         setError("Failed to fetch doctors. Please try again later.");

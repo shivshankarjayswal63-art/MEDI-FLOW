@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Nav from "../Nav Component/Nav";
 import { usePatientPortal } from "../Patient Component/PatientPortalContext";
-import axios from "axios";
-import { apiUrl } from "../../utils/apiBase";
+import { fetchPublicDoctors } from "../../utils/doctorsApi";
+import Footer from "../Nav Component/Footer";
 import { Box, Container, Grid, Card, CardContent, Typography, Chip, Button, TextField, Avatar } from "@mui/material";
 import { brand } from "../../theme/brand";
 import EmptyState from "../EmptyState";
@@ -13,12 +13,18 @@ function FindADoctor() {
   const [doctors, setDoctors] = useState([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    axios
-      .get(apiUrl("/api/doctor/public"))
-      .then((r) => setDoctors(r.data || []))
-      .catch(() => setDoctors([]))
+    fetchPublicDoctors()
+      .then((list) => {
+        setDoctors(list);
+        setLoadError("");
+      })
+      .catch(() => {
+        setDoctors([]);
+        setLoadError("We could not load doctors right now. Please refresh or try again shortly.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -44,12 +50,20 @@ function FindADoctor() {
           onChange={(e) => setFilter(e.target.value)}
           sx={{ mb: 4, maxWidth: 480 }}
         />
+        {loadError && (
+          <Typography color="error" sx={{ mb: 2 }}>
+            {loadError}
+          </Typography>
+        )}
         {loading ? (
           <Typography>Loading doctors...</Typography>
         ) : list.length === 0 ? (
           <EmptyState
             title="No doctors found"
-            message="Run npm run db:seed in BACKEND to load demo doctors."
+            message={
+              loadError ||
+              "No verified doctors match your search yet. Try another name or specialization."
+            }
           />
         ) : (
           <Grid container spacing={3}>
@@ -89,9 +103,10 @@ function FindADoctor() {
 
   if (inPortal) return content;
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f4f6fb] to-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-[#f4f6fb] to-white">
       <Nav />
-      {content}
+      <div className="flex-grow">{content}</div>
+      <Footer />
     </div>
   );
 }

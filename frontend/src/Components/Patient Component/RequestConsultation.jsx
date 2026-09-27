@@ -6,6 +6,7 @@ import { Container, Typography, TextField, Button, Alert, MenuItem, Box, Circula
 import { brand } from "../../theme/brand";
 import { pageTitleSx, pageContainerSx } from "../../theme/responsive";
 import { apiUrl } from "../../utils/apiBase";
+import { fetchPublicDoctors } from "../../utils/doctorsApi";
 import { isPatientSession } from "../../utils/auth";
 import PatientLoginGate from "./PatientLoginGate";
 
@@ -36,9 +37,8 @@ function RequestConsultation() {
       return;
     }
     setLoadingDoctors(true);
-    axios
-      .get(apiUrl("/api/doctor/public"))
-      .then((r) => setDoctors(r.data || []))
+    fetchPublicDoctors()
+      .then((list) => setDoctors(list))
       .catch(() => setErr("Could not load doctors. Try again later."))
       .finally(() => setLoadingDoctors(false));
   }, [patientLoggedIn]);

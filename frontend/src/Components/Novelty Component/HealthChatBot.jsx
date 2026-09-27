@@ -17,7 +17,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import SendIcon from "@mui/icons-material/Send";
 import MicIcon from "@mui/icons-material/Mic";
-import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
+import AssistantBrandIcon from "./AssistantBrandIcon";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import MinimizeIcon from "@mui/icons-material/Minimize";
@@ -316,17 +316,8 @@ const HealthChatBot = ({ open, onClose }) => {
             }}
           >
             <Box display="flex" alignItems="center">
-              <Avatar 
-                sx={{ 
-                  bgcolor: "#2fb297",
-                  width: 28,
-                  height: 28,
-                  mr: 1
-                }}
-              >
-                <MedicalServicesIcon sx={{ fontSize: 16 }} />
-              </Avatar>
-              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>AI Health Assistant</Typography>
+              <AssistantBrandIcon size={32} sx={{ mr: 1 }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>MEDI FLOW Assistant</Typography>
             </Box>
             <Box display="flex">
               <IconButton 
@@ -380,17 +371,9 @@ const HealthChatBot = ({ open, onClose }) => {
                     }}
                   >
                     {msg.sender === "bot" && (
-                      <Avatar 
-                        sx={{ 
-                          bgcolor: "#2fb297",
-                          width: 28, 
-                          height: 28,
-                          mr: 1,
-                          mt: 0.5
-                        }}
-                      >
-                        <MedicalServicesIcon sx={{ fontSize: 16 }} />
-                      </Avatar>
+                      <Box sx={{ mr: 1, mt: 0.5 }}>
+                        <AssistantBrandIcon size={28} />
+                      </Box>
                     )}
                     
                     <Box

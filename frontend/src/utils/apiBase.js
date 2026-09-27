@@ -19,10 +19,9 @@ export function getApiBase() {
     if (isLocalHost(host)) {
       return fromEnv || "http://localhost:5000";
     }
-    // Custom domains (e.g. mediflow.zayacodehub.in): use same-origin /api proxy — avoids CORS
-    // even when VITE_API_URL still points at medi-flow-api.vercel.app.
+    // Custom domains: call API host directly (same-origin /api proxy often returns 405 or SPA HTML).
     if (!host.endsWith(".vercel.app")) {
-      return "";
+      return fromEnv || DEFAULT_REMOTE_API;
     }
     if (fromEnv) return fromEnv;
     return "";
