@@ -1,4 +1,5 @@
 import { routeForRole, inferRoleFromEmail } from "./authRoutes";
+import { getRoleFromToken } from "./jwtRole";
 
 export const ROLE_LABELS = {
   patient: "Patient",
@@ -15,6 +16,11 @@ export function isAuthenticated() {
 export function getStoredRole() {
   const stored = localStorage.getItem("role");
   if (stored) return stored;
+  const fromToken = getRoleFromToken(localStorage.getItem("token"));
+  if (fromToken) {
+    localStorage.setItem("role", fromToken);
+    return fromToken;
+  }
   if (sessionStorage.getItem("doctor")) return "doctor";
   return null;
 }

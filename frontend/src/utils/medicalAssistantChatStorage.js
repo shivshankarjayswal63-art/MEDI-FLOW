@@ -10,7 +10,10 @@ export function loadLocalMedicalChat() {
   try {
     const raw = localStorage.getItem(storageKey());
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    const messages = sanitizeMessages(parsed?.messages);
+    if (!messages) return null;
+    return { ...parsed, messages };
   } catch {
     return null;
   }
@@ -39,7 +42,31 @@ export function clearLocalMedicalChat() {
   }
 }
 
+function sanitizeMessages(list) {
+  if (!Array.isArray(list)) return null;
+  const out = list
+    .filter((m) => m && (m.role === "user" || m.role === "assistant") && (m.content || m.fullContent))
+    .map((m) => ({
+      role: m.role,
+      content: String(m.fullContent || m.content || ""),
+      fullContent: String(m.fullContent || m.content || ""),
+      animate: false,
+      meta: m.meta || {},
+      actions: Array.isArray(m.actions) ? m.actions : m.meta?.actions || [],
+    }));
+  return out.length ? out : null;
+}
+
 export function sessionRowsToUiMessages(rows, fallbackWelcome) {
+  const fromRows = sanitizeMessages(
+    rows?.map((m) => ({
+      role: m.role,
+      content: m.content,
+      meta: m.meta,
+      actions: m.meta?.actions || m.actions,
+    }))
+  );
+  if (fromRows) return fromRows;
   if (!rows?.length) return fallbackWelcome;
   return rows.map((m) => ({
     role: m.role,

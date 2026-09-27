@@ -62,7 +62,7 @@ const HealthTrends = lazy(() => import("./Components/Novelty Component/HealthTre
 const VitalsInputForm = lazy(() => import("./Components/Novelty Component/VitalsInputForm"));
 const ChatbotLauncher = lazy(() => import("./Components/Novelty Component/ChatbotLauncher"));
 const HealthChatBot = lazy(() => import("./Components/Novelty Component/HealthChatBot"));
-const MedicalAssistantChat = lazy(() => import("./Components/Novelty Component/MedicalAssistantChat"));
+import MedicalAssistantChat from "./Components/Novelty Component/MedicalAssistantChat";
 
 function App() {
   const [chatOpen, setChatOpen] = useState(false);

@@ -313,6 +313,27 @@ export default function MedicalAssistantChat() {
     }
   };
 
+  if (!sessionReady) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 360,
+          width: "100%",
+        }}
+      >
+        <Stack alignItems="center" spacing={1}>
+          <CircularProgress sx={{ color: brand.success }} />
+          <Typography variant="body2" color="text.secondary">
+            Loading medical assistant…
+          </Typography>
+        </Stack>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -322,8 +343,8 @@ export default function MedicalAssistantChat() {
         maxWidth: "100%",
         minWidth: 0,
         mx: { xs: -1.5, sm: -2, md: -3 },
-        height: { xs: "calc(100dvh - 56px - 24px)", md: "calc(100dvh - 64px - 48px)" },
         minHeight: 420,
+        flex: 1,
       }}
     >
       <Paper
