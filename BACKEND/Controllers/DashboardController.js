@@ -8,6 +8,32 @@ function startOfToday() {
   return d.toISOString();
 }
 
+async function patientCount(supabase, table, column, userId) {
+  const { count, error } = await supabase
+    .from(table)
+    .select("*", { count: "exact", head: true })
+    .eq(column, userId);
+  if (error) {
+    console.warn(`patient dashboard count ${table}:`, error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+async function patientList(supabase, table, column, userId, orderBy, limit) {
+  const { data, error } = await supabase
+    .from(table)
+    .select("*")
+    .eq(column, userId)
+    .order(orderBy, { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn(`patient dashboard list ${table}:`, error.message);
+    return [];
+  }
+  return data || [];
+}
+
 async function countTable(table, filterFn) {
   if (useSupabase()) {
     const supabase = getSupabase();
@@ -99,66 +125,50 @@ exports.getSummary = async (req, res) => {
           return res.status(401).json({ message: "Unauthorized" });
         }
 
-        const now = new Date().toISOString();
-
         const [
-          { data: appts },
-          { data: vitals },
-          { data: analyses },
-          { data: reports },
-          { data: prescriptions },
-          notifRes,
-          { data: userRow },
+          appointments,
+          vitalsList,
+          analyses,
+          reports,
+          prescriptions,
+          notifications,
+          userRow,
+          totalAppointments,
+          totalVitals,
+          totalAnalyses,
+          totalReports,
+          totalPrescriptions,
+          apptStatusRows,
         ] = await Promise.all([
+          patientList(supabase, "appointments", "user_id", userId, "date", 50),
+          patientList(supabase, "vitals", "user_id", userId, "created_at", 30),
+          patientList(supabase, "analyses", "user_id", userId, "created_at", 20),
+          patientList(supabase, "medical_reports", "user_id", userId, "uploaded_at", 20),
+          patientList(supabase, "prescriptions", "patient_id", userId, "date_issued", 10),
+          patientList(supabase, "notifications", "user_id", userId, "created_at", 15),
+          supabase
+            .from("users")
+            .select("name, email, blood_group, city, gender, mobile")
+            .eq("id", userId)
+            .maybeSingle()
+            .then((r) => (r.error ? null : r.data)),
+          patientCount(supabase, "appointments", "user_id", userId),
+          patientCount(supabase, "vitals", "user_id", userId),
+          patientCount(supabase, "analyses", "user_id", userId),
+          patientCount(supabase, "medical_reports", "user_id", userId),
+          patientCount(supabase, "prescriptions", "patient_id", userId),
           supabase
             .from("appointments")
-            .select("*")
+            .select("status, date")
             .eq("user_id", userId)
-            .order("date", { ascending: false })
-            .limit(50),
-          supabase
-            .from("vitals")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false })
-            .limit(30),
-          supabase
-            .from("analyses")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false })
-            .limit(20),
-          supabase
-            .from("medical_reports")
-            .select("*")
-            .eq("user_id", userId)
-            .order("uploaded_at", { ascending: false })
-            .limit(20),
-          supabase
-            .from("prescriptions")
-            .select("*")
-            .eq("patient_id", userId)
-            .order("date_issued", { ascending: false })
-            .limit(10),
-          supabase
-            .from("notifications")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false })
-            .limit(15),
-          supabase.from("users").select("name, email, blood_group, city, gender, mobile").eq("id", userId).maybeSingle(),
+            .then((r) => (r.error ? [] : r.data || [])),
         ]);
-        const notifications = notifRes.error ? [] : notifRes.data || [];
-
-        const appointments = appts || [];
-        const pending = appointments.filter((a) => a.status === "Pending").length;
-        const completed = appointments.filter((a) => a.status === "Completed").length;
-        const upcoming = appointments.filter(
+        const pending = apptStatusRows.filter((a) => a.status === "Pending").length;
+        const completed = apptStatusRows.filter((a) => a.status === "Completed").length;
+        const upcoming = apptStatusRows.filter(
           (a) => new Date(a.date).getTime() >= Date.now() && a.status !== "Completed"
         ).length;
-        const unread = (notifications || []).filter((n) => !n.read).length;
-
-        const vitalsList = vitals || [];
+        const unread = notifications.filter((n) => !n.read).length;
         const latestVitals = vitalsList[0]
           ? {
               bp: vitalsList[0].bp,
@@ -235,23 +245,23 @@ exports.getSummary = async (req, res) => {
               }
             : {},
           counts: {
-            appointments: appointments.length,
+            appointments: totalAppointments,
             pendingAppointments: pending,
             upcomingAppointments: upcoming,
             completedAppointments: completed,
-            vitals: vitalsList.length,
-            analyses: (analyses || []).length,
-            labReports: (reports || []).length,
-            prescriptions: (prescriptions || []).length,
+            vitals: totalVitals,
+            analyses: totalAnalyses,
+            labReports: totalReports,
+            prescriptions: totalPrescriptions,
             unreadNotifications: unread,
           },
           latestVitals,
           vitalsTrend,
           recentAppointments: appointments.slice(0, 10).map(mapAppt),
-          recentAnalyses: (analyses || []).slice(0, 6).map(mapAnalysis),
-          recentReports: (reports || []).slice(0, 6).map(mapReport),
-          recentPrescriptions: (prescriptions || []).slice(0, 5).map(mapRx),
-          recentNotifications: (notifications || []).slice(0, 6).map(mapNotif),
+          recentAnalyses: analyses.slice(0, 6).map(mapAnalysis),
+          recentReports: reports.slice(0, 6).map(mapReport),
+          recentPrescriptions: prescriptions.slice(0, 5).map(mapRx),
+          recentNotifications: notifications.slice(0, 6).map(mapNotif),
         });
       }
     }

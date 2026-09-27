@@ -14,6 +14,7 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Alert,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -81,6 +82,7 @@ function PatientDashboard() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [data, setData] = useState(emptySummary);
 
   useEffect(() => {
@@ -92,10 +94,29 @@ function PatientDashboard() {
     const headers = { Authorization: `Bearer ${token}` };
     const api = import.meta.env.VITE_API_URL;
 
+    if (!api) {
+      setLoadError("VITE_API_URL is not configured.");
+      setLoading(false);
+      return;
+    }
+
     axios
       .get(`${api}/api/dashboard/summary?portal=patient`, { headers })
-      .then((r) => setData({ ...emptySummary, ...r.data }))
-      .catch(() => setData(emptySummary))
+      .then((r) => {
+        setLoadError("");
+        setData({ ...emptySummary, ...r.data });
+      })
+      .catch((err) => {
+        setData(emptySummary);
+        if (err.response?.status === 401) {
+          navigate("/login");
+          return;
+        }
+        setLoadError(
+          err.response?.data?.message ||
+            "Could not load your dashboard. Redeploy the API and try signing in again."
+        );
+      })
       .finally(() => setLoading(false));
   }, [navigate]);
 
@@ -189,17 +210,18 @@ function PatientDashboard() {
         Your vitals, appointments, AI checks, and lab results in one place.
       </Typography>
 
+      {loadError && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {loadError}
+        </Alert>
+      )}
+
       {profile?.bloodGroup && (
         <Box sx={{ mb: { xs: 2, md: 3 }, display: "flex", flexWrap: "wrap", gap: 1 }}>
           <Chip label={`Blood: ${profile.bloodGroup}`} size="small" />
           {profile.city && <Chip label={profile.city} size="small" variant="outlined" />}
           {profile.mobile && (
-            <Chip
-              label={profile.mobile}
-              size="small"
-              variant="outlined"
-              sx={{ maxWidth: "100%" }}
-            />
+            <Chip label={profile.mobile} size="small" variant="outlined" sx={{ maxWidth: "100%" }} />
           )}
         </Box>
       )}
@@ -251,10 +273,10 @@ function PatientDashboard() {
         ))}
       </Grid>
 
-      {!hasAnyData && (
+      {!hasAnyData && !loadError && (
         <EmptyState
           title="No health data yet"
-          message="Run the demo seed on Supabase, then log in as patient1@demo.com — or start by booking an appointment and logging vitals."
+          message="Run npm run db:seed in BACKEND (same Supabase as production), then log in as patient1@demo.com."
           actionLabel="Book appointment"
           onAction={() => navigate("/Book-Appointment")}
         />
@@ -269,13 +291,9 @@ function PatientDashboard() {
               </Typography>
               {latestVitals ? (
                 <>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2, wordBreak: "break-word" }}
-                  >
-                    Latest: BP {latestVitals.bp}, pulse {latestVitals.pulse}, sugar {latestVitals.sugar}{" "}
-                    mg/dL · {new Date(latestVitals.createdAt).toLocaleString()}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, wordBreak: "break-word" }}>
+                    Latest: BP {latestVitals.bp}, pulse {latestVitals.pulse}, sugar {latestVitals.sugar} mg/dL ·{" "}
+                    {new Date(latestVitals.createdAt).toLocaleString()}
                   </Typography>
                   <Box sx={{ height: { xs: 220, sm: 280, md: 300 }, width: "100%", minWidth: 0 }}>
                     <Line data={chartData} options={chartOptions} />
@@ -348,17 +366,14 @@ function PatientDashboard() {
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Typography fontWeight={600} sx={{ mb: 1 }}>Recent symptom AI</Typography>
               <List dense disablePadding>
-                {(recentAnalyses.length ? recentAnalyses : []).map((row, i) => (
+                {recentAnalyses.map((row, i) => (
                   <React.Fragment key={row._id || row.id || i}>
                     <ListItem disableGutters sx={{ alignItems: "flex-start" }}>
                       <ListItemText
                         primary={row.prediction}
                         secondary={`${(row.symptoms || []).join(", ")} · ${new Date(row.createdAt).toLocaleDateString()}`}
                         primaryTypographyProps={{ variant: "body2", fontWeight: 600 }}
-                        secondaryTypographyProps={{
-                          variant: "caption",
-                          sx: { wordBreak: "break-word" },
-                        }}
+                        secondaryTypographyProps={{ variant: "caption", sx: { wordBreak: "break-word" } }}
                       />
                     </ListItem>
                     {i < recentAnalyses.length - 1 && <Divider />}
@@ -383,10 +398,7 @@ function PatientDashboard() {
                     <ListItemText
                       primary={r.fileName || r.file_name}
                       secondary={r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString() : ""}
-                      primaryTypographyProps={{
-                        variant: "body2",
-                        sx: { wordBreak: "break-word" },
-                      }}
+                      primaryTypographyProps={{ variant: "body2", sx: { wordBreak: "break-word" } }}
                     />
                   </ListItem>
                 ))}

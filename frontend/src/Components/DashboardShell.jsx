@@ -44,17 +44,11 @@ export default function DashboardShell({
   const location = useLocation();
 
   useEffect(() => {
-    if (!isMobile) {
-      setOpen(true);
-    } else {
-      setOpen(false);
-    }
+    setOpen(!isMobile);
   }, [isMobile]);
 
   useEffect(() => {
-    if (isMobile) {
-      setOpen(false);
-    }
+    if (isMobile) setOpen(false);
   }, [location.pathname, isMobile]);
 
   useEffect(() => {
@@ -108,17 +102,23 @@ export default function DashboardShell({
     borderRight: "none",
     bgcolor: brand.primary,
     color: "white",
-    height: { xs: "calc(100% - 56px)", sm: "calc(100% - 64px)" },
+    height: { xs: "calc(100dvh - 56px)", sm: "calc(100dvh - 64px)" },
   };
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: brand.lightBg, width: "100%", overflowX: "hidden" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100dvh",
+        bgcolor: brand.lightBg,
+        width: "100%",
+        maxWidth: "100vw",
+        overflowX: "hidden",
+      }}
+    >
       <AppBar
         position="fixed"
-        sx={{
-          zIndex: (t) => t.zIndex.drawer + 1,
-          bgcolor: brand.primary,
-        }}
+        sx={{ zIndex: (t) => t.zIndex.drawer + 1, bgcolor: brand.primary }}
       >
         <Toolbar sx={{ minHeight: { xs: 56, sm: 64 }, px: { xs: 1, sm: 2 } }}>
           <IconButton color="inherit" onClick={() => setOpen(!open)} edge="start" aria-label="Open menu">
@@ -174,8 +174,12 @@ export default function DashboardShell({
         onClose={() => setOpen(false)}
         ModalProps={{ keepMounted: true }}
         sx={{
-          width: isMobile ? "auto" : open ? drawerWidth : 0,
           flexShrink: 0,
+          ...(isMobile
+            ? {}
+            : {
+                width: open ? drawerWidth : 0,
+              }),
           [`& .MuiDrawer-paper`]: drawerPaperSx,
         }}
       >
@@ -193,9 +197,7 @@ export default function DashboardShell({
                 "&.Mui-selected": { bgcolor: "rgba(255,255,255,0.15)" },
               }}
             >
-              <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
-                {item.icon}
-              </ListItemIcon>
+              <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>{item.icon}</ListItemIcon>
               <ListItemText
                 primary={item.name}
                 primaryTypographyProps={{ fontSize: { xs: "0.9rem", md: "1rem" } }}
@@ -209,27 +211,18 @@ export default function DashboardShell({
         component="main"
         sx={{
           flexGrow: 1,
-          width: "100%",
+          width: isMobile ? "100%" : open ? `calc(100% - ${drawerWidth}px)` : "100%",
           maxWidth: "100%",
           minWidth: 0,
           overflowX: "hidden",
           p: { xs: 1.5, sm: 2, md: 3 },
           mt: { xs: 7, sm: 8 },
-          transition: theme.transitions.create("margin", {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          ...(open &&
-            !isMobile && {
-              width: `calc(100% - ${drawerWidth}px)`,
-            }),
+          boxSizing: "border-box",
         }}
       >
         {showNotifs && (
           <Paper sx={{ mb: 2, p: 2, width: "100%", maxWidth: { xs: "100%", sm: 420 } }}>
-            <Typography variant="subtitle1" fontWeight={600}>
-              Notifications
-            </Typography>
+            <Typography variant="subtitle1" fontWeight={600}>Notifications</Typography>
             <Divider sx={{ my: 1 }} />
             {notifications.length === 0 ? (
               <Typography variant="body2" color="text.secondary">No notifications</Typography>
