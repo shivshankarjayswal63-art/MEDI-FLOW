@@ -60,16 +60,32 @@ flowchart LR
 
 ## Portals, roles & demo logins
 
-Use these after seeding demo data (`cd BACKEND && npm run db:seed`) against your Supabase project.
+**Prerequisite:** `cd BACKEND && npm run db:seed` (same Supabase project as production API).
 
-| Role | Sign-in page | Dashboard / home | Email | Password |
-|------|----------------|------------------|-------|----------|
-| **Patient** | [/login](https://mediflow.zayacodehub.in/login) | `/patient-dashboard` | `patient1@demo.com` | `Patient@123` |
-| Patient (alt) | `/login` | `/patient-dashboard` | `patient2@demo.com` … `patient5@demo.com` | `Patient@123` |
-| **Platform admin** | `/login` | `/User-Dashboard` | `useradmin@gmail.com` | `Admin@123` |
-| **Pharmacy admin** | `/login` | `/Pharmacy-Dashboard` | `pharmacyadmin@gmail.com` | `Admin@123` |
-| **Appointment admin** | `/login` | `/Appointment-Dashboard` | `appointmentadmin@gmail.com` | `Admin@123` |
-| **Doctor** | [/login-doctor](https://mediflow.zayacodehub.in/login-doctor) | `/Doctor-Dashboard` | `doctoradmin@gmail.com` | `Admin@123` |
+### Patients & staff → [https://mediflow.zayacodehub.in/login](https://mediflow.zayacodehub.in/login)
+
+| Portal | Dashboard | Email | Password |
+|--------|-----------|-------|----------|
+| **Patient** | `/patient-dashboard` | `patient1@demo.com` | `Patient@123` |
+| Patient | `/patient-dashboard` | `patient2@demo.com` | `Patient@123` |
+| Patient | `/patient-dashboard` | `patient3@demo.com` | `Patient@123` |
+| Patient | `/patient-dashboard` | `patient4@demo.com` | `Patient@123` |
+| Patient | `/patient-dashboard` | `patient5@demo.com` | `Patient@123` |
+| **Platform admin** | `/User-Dashboard` | `useradmin@gmail.com` | `Admin@123` |
+| **Pharmacy admin** | `/Pharmacy-Dashboard` | `pharmacyadmin@gmail.com` | `Admin@123` |
+| **Appointment admin** | `/Appointment-Dashboard` | `appointmentadmin@gmail.com` | `Admin@123` |
+
+### Doctors → [https://mediflow.zayacodehub.in/login-doctor](https://mediflow.zayacodehub.in/login-doctor) only
+
+| Portal | Dashboard | Email | Password |
+|--------|-----------|-------|----------|
+| **Doctor (admin demo)** | `/Doctor-Dashboard` | `doctoradmin@gmail.com` | `Admin@123` |
+| Doctor (cardiology) | `/Doctor-Dashboard` | `dr.cardio@demo.com` | `Admin@123` |
+| Doctor (general practice) | `/Doctor-Dashboard` | `dr.gp@demo.com` | `Admin@123` |
+| Doctor (pediatrics) | `/Doctor-Dashboard` | `dr.peds@demo.com` | `Admin@123` |
+| Doctor (dermatology) | `/Doctor-Dashboard` | `dr.derm@demo.com` | `Admin@123` |
+
+> **Demo only** — change passwords in production. Do not commit real secrets.
 
 ### Login rules
 
@@ -177,17 +193,55 @@ Then sign in at **`/login`** → **`/User-Dashboard`**.
 
 ---
 
-## AI & medical assistant
+## How our AI works
+
+MEDI FLOW uses **several AI layers**. They are independent—you can use one without the others.
+
+### 1. Medical assistant (main product AI)
+
+**Where:** Patient menu → **Medical assistant** (`/medical-assistant`), plus the **floating AI Health Assistant** on public pages.
+
+**API:** `POST /api/medical-assistant/chat` · `POST /api/medical-assistant/book` · `GET /api/medical-assistant/session`
+
+**Pipeline** (`BACKEND/lib/medicalAssistant.js`):
+
+1. **Intent routing** — Greetings, off-topic guard, “summarize my health history”, and **appointment booking** are handled by dedicated logic (`appointmentAssistant.js`) before any LLM call.
+2. **Symptom extraction** — Free text is normalized (synonyms like “SOB” → shortness of breath) and passed to **`symptomAnalyzer.js`** (rule-based screening with urgency flags and condition rankings).
+3. **Patient context** (when logged in as patient) — Vitals, past analyses, allergies, and uploaded report summaries from Supabase (`patientHealthContext.js`, migration `004`) are added to the prompt so answers and doctor suggestions are personalized.
+4. **NVIDIA Nemotron** (optional) — If `NVIDIA_API_KEY` is set on the **backend**, the assistant calls Nemotron via NVIDIA’s API with symptom/context JSON. On Vercel, a **~7s timeout** applies; if the LLM is slow or unavailable, the system **falls back automatically**.
+5. **Rules fallback** — Curated condition blurbs, screening results, and FAQ-style replies always work **without** any API key.
+6. **In-app booking** — Detects booking intent → wizard (approved doctors only) → `POST /api/medical-assistant/book` creates a real appointment in PostgreSQL.
+
+Guests can chat for general health info; **booking, consultation requests, and full health summaries require patient login**.
+
+### 2. Symptom analysis page (Novelty / ML)
+
+**Where:** `/symptom-analysis`, `/analysis-history`
+
+**API:** `POST /api/novelty/analyze`, `POST /api/analysis/save`
+
+Uses the **Python sklearn** stack in `BACKEND/ai-model/` (Random Forest on Kaggle-style symptom data, ~43 disease classes). Training is **local or separate host**—not on Vercel serverless. If the Python service is not running, the medical assistant rules engine still answers symptom questions.
+
+### 3. Report upload insights
+
+When patients upload labs/imaging metadata (migration `004`), the backend can store **AI tags / report summaries** used by the medical assistant and **doctor recommendation** logic (`doctorRecommendation.js`, `reportInsights.js`).
+
+### Environment (operators)
+
+| Variable | Purpose |
+|----------|---------|
+| `NVIDIA_API_KEY` | Nemotron for medical assistant (backend only) |
+| `NVIDIA_NEMOTRON_MODEL` | Optional model id (default Nemotron 3 Ultra) |
+| `AI_API_URL` | Optional external URL for Python symptom ML service |
+
+### Quick reference
 
 | Component | Behavior |
 |-----------|----------|
-| **NVIDIA Nemotron** (optional) | Set `NVIDIA_API_KEY` on API; falls back to built-in screening if slow or missing. |
-| **Chat** | `POST /api/medical-assistant/chat` (optional auth — richer context when patient is logged in). |
-| **Session** | `GET /api/medical-assistant/session` when migration `003` is applied. |
-| **Book** | `POST /api/medical-assistant/book` (patient only). |
-| **Floating widget** | Uses same API via `/api/...` on [mediflow.zayacodehub.in](https://mediflow.zayacodehub.in/). |
-
-Patient health context (allergies, chronic conditions, report AI summaries) is injected when migration **`004`** is applied and profile/reports are filled in.
+| **Chat** | Optional JWT — richer context when patient is signed in |
+| **Session** | Server-side chat history when migration `003` is applied |
+| **Book** | Patient role only; approved doctors only |
+| **Floating widget** | Same chat API via `/api/...` on the live site |
 
 ---
 
@@ -234,10 +288,12 @@ Fix staff roles in DB if needed: `npm run fix:staff-roles`
 |-------|------------|
 | Frontend | React 18, Vite, React Router, MUI, Tailwind |
 | Backend | Node.js, Express |
-| Database | **Supabase (PostgreSQL)** |
-| Auth | JWT (custom login; not Supabase Auth for portals) |
+| Database | **Supabase (PostgreSQL)** — all users, doctors, appointments, vitals, reports, chat |
+| Auth | JWT (custom login via `/api/auth/login` and `/api/auth/login-doctor`) |
 | Hosting | Vercel (frontend + API projects) |
-| AI | Medical assistant (Nemotron + rules), optional Python sklearn models in `BACKEND/ai-model/` |
+| AI | Nemotron + rules (assistant), optional Python sklearn (`BACKEND/ai-model/`) for symptom page |
+
+**Not used in this project:** MongoDB, Mongoose, Firebase Auth/Firestore for portal login. Older docs or forks may mention them; the live app reads/writes **only Supabase** through `BACKEND/lib/supabaseModel.js`.
 
 ---
 
