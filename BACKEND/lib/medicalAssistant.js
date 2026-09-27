@@ -154,31 +154,107 @@ function findConditionInfoQuery(text) {
   return null;
 }
 
+const MEDICAL_HINTS = [
+  "pain",
+  "symptom",
+  "fever",
+  "cough",
+  "doctor",
+  "medic",
+  "health",
+  "disease",
+  "sick",
+  "nausea",
+  "headache",
+  "breath",
+  "heart",
+  "stomach",
+  "hospital",
+  "clinic",
+  "emergency",
+  "diagnos",
+  "treatment",
+  "therapy",
+  "prescri",
+  "pharma",
+  "vaccin",
+  "infection",
+  "virus",
+  "bacteria",
+  "injury",
+  "wound",
+  "rash",
+  "allerg",
+  "diabetes",
+  "cancer",
+  "asthma",
+  "stroke",
+  "migraine",
+  "ulcer",
+  "gastri",
+  "pneumonia",
+  "blood pressure",
+  "cholesterol",
+  "what is",
+  "what are",
+  "how to treat",
+  "when to",
+  "should i see",
+  "difference between",
+  "side effect",
+  "dose",
+  "vitamin",
+  "nutrition",
+  "pregnant",
+  "child fever",
+];
+
+function isGreetingOnly(text) {
+  const t = text.toLowerCase().trim();
+  return /^(hi|hello|hey|good morning|good evening|thanks|thank you)[!.?\s]*$/.test(t);
+}
+
+function hasMedicalIntent(text) {
+  const t = text.toLowerCase();
+  if (MEDICAL_HINTS.some((h) => t.includes(h))) return true;
+  if (extractSymptomsFromText(text).length > 0) return true;
+  if (findConditionInfoQuery(text)) return true;
+  if (/\b(why am i|i feel|i have|my \w+ hurts)\b/.test(t)) return true;
+  return false;
+}
+
 function isOffTopic(text) {
   const t = text.toLowerCase();
-  const medicalHints = [
-    "pain",
-    "symptom",
-    "fever",
-    "cough",
-    "doctor",
-    "medic",
-    "health",
-    "disease",
-    "sick",
-    "nausea",
-    "headache",
-    "breath",
-    "heart",
-    "stomach",
-    "what is",
-    "how to treat",
-    "when to",
+  if (isGreetingOnly(text)) return false;
+  if (hasMedicalIntent(text)) return false;
+  const offTopic = [
+    "weather",
+    "football",
+    "cricket",
+    "movie",
+    "bitcoin",
+    "crypto",
+    "homework",
+    "write code",
+    "python",
+    "javascript",
+    "recipe",
+    "dating",
+    "politics",
+    "stock market",
+    "joke",
+    "poem",
+    "limerick",
+    "gpu computing",
   ];
-  if (medicalHints.some((h) => t.includes(h))) return false;
-  const offTopic = ["weather", "football", "movie", "bitcoin", "homework", "write code"];
-  return offTopic.some((o) => t.includes(o));
+  if (offTopic.some((o) => t.includes(o))) return true;
+  // Non-medical chit-chat: no medical keywords and looks like general Q&A
+  if (t.length > 12 && !t.includes("?") && !hasMedicalIntent(text)) return true;
+  return !hasMedicalIntent(text) && t.length > 8;
 }
+
+const MEDICAL_ONLY_REFUSAL =
+  "I can only help with **medical and health topics** — symptoms, conditions, when to seek care, and general wellness education. Please ask a health-related question (for example: “What are stroke warning signs?” or “I have fever and cough”).";
 
 function buildRulesReply(message, analysis, info) {
   const parts = [];
@@ -215,10 +291,11 @@ function buildRulesReply(message, analysis, info) {
 }
 
 function buildSystemPrompt(context) {
-  return `You are MEDI FLOW Medical Assistant, a helpful but cautious health educator.
+  return `You are MEDI FLOW Medical Assistant — a health educator inside a hospital patient portal.
 Rules:
-- You do NOT diagnose, prescribe, or replace a doctor.
-- Answer questions about diseases, symptoms, and when to seek care in clear, simple English.
+- ONLY discuss medicine, symptoms, diseases, prevention, when to seek care, and general wellness. If the user asks anything non-medical, politely refuse and invite a health question.
+- You do NOT diagnose, prescribe medications, or replace a licensed clinician.
+- Answer in clear, simple English with short paragraphs or bullet lists when helpful.
 - If urgent screening context is provided, emphasize emergency care when appropriate.
 - Keep replies under about 200 words unless the user asks for detail.
 - End with a brief reminder to consult a healthcare professional for personal advice.
@@ -283,10 +360,20 @@ async function callNemotron(userMessage, history, context) {
 }
 
 async function processMedicalChat(message, history) {
-  if (isOffTopic(message)) {
+  if (isGreetingOnly(message)) {
     return {
       reply:
-        "I'm focused on health, symptoms, and disease information. Ask me about how you're feeling or about a medical topic, and I'll do my best to help with educational guidance.",
+        "Hello! I'm your MEDI FLOW medical assistant. Ask about symptoms, conditions, or when to seek care — for example chest pain, fever, headaches, or what stroke warning signs look like.",
+      urgent: false,
+      primaryCondition: null,
+      confidence: 0,
+      source: "rules",
+    };
+  }
+
+  if (isOffTopic(message)) {
+    return {
+      reply: MEDICAL_ONLY_REFUSAL,
       urgent: false,
       primaryCondition: null,
       confidence: 0,

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import {
   Alert,
@@ -8,28 +8,28 @@ import {
   CircularProgress,
   IconButton,
   Paper,
+  Stack,
   TextField,
   Typography,
+  alpha,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import SmartToyIcon from "@mui/icons-material/SmartToy";
-import PersonIcon from "@mui/icons-material/Person";
+import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import TipsAndUpdatesOutlinedIcon from "@mui/icons-material/TipsAndUpdatesOutlined";
 import { brand } from "../../theme/brand";
-import { pageContainerSx, pageSubtitleSx, pageTitleSx } from "../../theme/responsive";
+import { pageContainerSx } from "../../theme/responsive";
 import { sendMedicalAssistantMessage } from "../../utils/medicalAssistantApi";
-
-const STARTERS = [
-  "I have chest pain and shortness of breath",
-  "What are stroke warning signs?",
-  "Difference between heartburn and heart attack?",
-  "I feel nausea and stomach pain after meals",
-];
+import { getMedicalQuestionSuggestions } from "../../utils/medicalChatSuggestions";
 
 const INITIAL_MESSAGES = [
   {
     role: "assistant",
     content:
-      "Hi! I'm your MEDI FLOW medical assistant. Ask about symptoms, diseases, or when to seek care. I'll give educational guidance—not a diagnosis.",
+      "Hello! I answer **health and medical questions only** — symptoms, conditions, and when to get care. What would you like to know?",
   },
 ];
 
@@ -39,13 +39,32 @@ function toHistory(messages) {
     .map((m) => ({ role: m.role, content: m.content }));
 }
 
+function renderMessageText(text, isUser) {
+  const parts = String(text).split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <Box component="span" key={i} sx={{ fontWeight: 700 }}>
+          {part.slice(2, -2)}
+        </Box>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 export default function MedicalAssistantChat() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [urgent, setUrgent] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
+
+  const suggestions = useMemo(() => getMedicalQuestionSuggestions(input), [input]);
+  const showSuggestions = !loading;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -69,18 +88,17 @@ export default function MedicalAssistantChat() {
       setMessages((prev) => [...prev, { role: "assistant", content: reply, meta: data }]);
     } catch (err) {
       const isTimeout = err.name === "AbortError";
-      const api = import.meta.env.VITE_API_URL || "(not set)";
       setError(
         isTimeout
-          ? `Request timed out (API: ${api}). Try again or use a shorter question.`
-          : `${err.message || "Could not reach the server."} (API: ${api})`
+          ? "Request timed out. Try a shorter question or tap a suggested question below."
+          : err.message || "Could not reach the server."
       );
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
           content:
-            "I'm having trouble connecting right now. You can still use Symptom AI for a structured check, or try again in a moment.",
+            "Connection issue — please try again. You can also use **Symptom AI** for a structured check from the menu.",
         },
       ]);
     } finally {
@@ -96,45 +114,101 @@ export default function MedicalAssistantChat() {
   };
 
   return (
-    <Box sx={pageContainerSx}>
-      <Typography sx={pageTitleSx} color={brand.primary}>
-        Medical assistant
-      </Typography>
-      <Typography sx={pageSubtitleSx} color="text.secondary">
-        Chat about symptoms and conditions—powered by screening logic and optional NVIDIA Nemotron on the server.
-      </Typography>
-
-      <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
-        Educational screening only—not medical advice. Call emergency services if you have severe or sudden symptoms.
-      </Alert>
-
-      {urgent && (
-        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
-          Urgent screening flag — seek emergency care if symptoms are severe or worsening.
-        </Alert>
-      )}
-
-      {error && (
-        <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError("")}>
-          {error}
-        </Alert>
-      )}
-
+    <Box
+      sx={{
+        ...pageContainerSx,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: { xs: "calc(100dvh - 120px)", md: "calc(100dvh - 140px)" },
+        maxWidth: 960,
+        mx: "auto",
+        width: "100%",
+      }}
+    >
       <Paper
         elevation={0}
         sx={{
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 2,
+          flex: 1,
           display: "flex",
           flexDirection: "column",
-          height: { xs: "calc(100dvh - 280px)", md: "min(65vh, 560px)" },
-          minHeight: 320,
+          borderRadius: { xs: 2, md: 3 },
           overflow: "hidden",
-          bgcolor: brand.lightBg,
+          border: `1px solid ${alpha(brand.primary, 0.12)}`,
+          boxShadow: `0 12px 40px ${alpha(brand.primary, 0.08)}`,
+          minHeight: 0,
         }}
       >
-        <Box sx={{ flex: 1, overflowY: "auto", p: { xs: 1.5, sm: 2 } }}>
+        {/* Header */}
+        <Box
+          sx={{
+            px: { xs: 2, sm: 2.5 },
+            py: { xs: 1.5, sm: 2 },
+            background: `linear-gradient(135deg, ${brand.primary} 0%, #3d3f9e 55%, ${brand.success} 120%)`,
+            color: "#fff",
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                bgcolor: alpha("#fff", 0.15),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <LocalHospitalIcon />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: { xs: "1.05rem", sm: "1.2rem" }, lineHeight: 1.2 }}>
+                Medical assistant
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.92, fontSize: { xs: "0.75rem", sm: "0.85rem" } }}>
+                Health questions only · Educational guidance
+              </Typography>
+            </Box>
+          </Stack>
+          <Chip
+            size="small"
+            label={isMobile ? "Not medical advice" : "Educational only — not a diagnosis. Call emergency services if severe symptoms."}
+            sx={{
+              mt: 1.5,
+              bgcolor: alpha("#fff", 0.18),
+              color: "#fff",
+              fontSize: "0.7rem",
+              height: "auto",
+              py: 0.25,
+              "& .MuiChip-label": { whiteSpace: "normal", px: 1 },
+            }}
+          />
+        </Box>
+
+        {urgent && (
+          <Alert severity="error" sx={{ borderRadius: 0, py: 0.5 }}>
+            Urgent screening — seek emergency care if symptoms are severe or worsening.
+          </Alert>
+        )}
+
+        {error && (
+          <Alert severity="warning" sx={{ borderRadius: 0, py: 0.5 }} onClose={() => setError("")}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Messages */}
+        <Box
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            px: { xs: 1.25, sm: 2 },
+            py: { xs: 1.5, sm: 2 },
+            bgcolor: alpha(brand.lightBg, 0.65),
+            backgroundImage: `radial-gradient(${alpha(brand.success, 0.06)} 1px, transparent 1px)`,
+            backgroundSize: "20px 20px",
+          }}
+        >
           {messages.map((msg, idx) => {
             const isUser = msg.role === "user";
             return (
@@ -143,109 +217,191 @@ export default function MedicalAssistantChat() {
                 sx={{
                   display: "flex",
                   justifyContent: isUser ? "flex-end" : "flex-start",
-                  mb: 1.5,
+                  mb: 1.75,
                 }}
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 1,
-                    maxWidth: "92%",
-                    flexDirection: isUser ? "row-reverse" : "row",
-                  }}
+                <Stack
+                  direction={isUser ? "row-reverse" : "row"}
+                  spacing={1}
+                  alignItems="flex-end"
+                  sx={{ maxWidth: { xs: "96%", sm: "88%" } }}
                 >
                   <Box
                     sx={{
-                      width: 32,
-                      height: 32,
+                      width: 36,
+                      height: 36,
                       borderRadius: "50%",
+                      flexShrink: 0,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       bgcolor: isUser ? brand.primary : brand.success,
                       color: "#fff",
-                      flexShrink: 0,
+                      boxShadow: `0 4px 12px ${alpha(isUser ? brand.primary : brand.success, 0.35)}`,
                     }}
                   >
-                    {isUser ? <PersonIcon fontSize="small" /> : <SmartToyIcon fontSize="small" />}
+                    {isUser ? <PersonOutlineIcon fontSize="small" /> : <SmartToyOutlinedIcon fontSize="small" />}
                   </Box>
                   <Paper
+                    elevation={0}
                     sx={{
-                      p: 1.5,
-                      borderRadius: 2,
+                      px: 1.75,
+                      py: 1.25,
+                      borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                       bgcolor: isUser ? brand.primary : "#fff",
                       color: isUser ? "#fff" : "text.primary",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
+                      border: isUser ? "none" : `1px solid ${alpha(brand.primary, 0.08)}`,
+                      boxShadow: isUser ? `0 6px 16px ${alpha(brand.primary, 0.25)}` : `0 4px 14px ${alpha("#000", 0.06)}`,
                     }}
-                    elevation={isUser ? 0 : 1}
                   >
-                    <Typography variant="body2" sx={{ fontSize: { xs: "0.875rem", sm: "0.9375rem" } }}>
-                      {msg.content}
+                    <Typography
+                      variant="body2"
+                      component="div"
+                      sx={{
+                        fontSize: { xs: "0.875rem", sm: "0.9375rem" },
+                        lineHeight: 1.55,
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {renderMessageText(msg.content, isUser)}
                     </Typography>
                     {msg.meta?.source && !isUser && (
                       <Chip
                         size="small"
-                        label={msg.meta.source === "nemotron" ? "AI enhanced" : "Screening engine"}
-                        sx={{ mt: 1, fontSize: "0.65rem", height: 22 }}
+                        label={msg.meta.source === "nemotron" ? "AI · medical mode" : "Screening engine"}
+                        sx={{
+                          mt: 1,
+                          height: 22,
+                          fontSize: "0.65rem",
+                          bgcolor: alpha(brand.success, 0.12),
+                          color: brand.success,
+                        }}
                       />
                     )}
                   </Paper>
-                </Box>
+                </Stack>
               </Box>
             );
           })}
           {loading && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, pl: 5 }}>
-              <CircularProgress size={20} sx={{ color: brand.success }} />
-              <Typography variant="body2" color="text.secondary">Thinking…</Typography>
-            </Box>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 5, py: 0.5 }}>
+              <CircularProgress size={18} sx={{ color: brand.success }} />
+              <Typography variant="body2" color="text.secondary">Analyzing your question…</Typography>
+            </Stack>
           )}
           <div ref={bottomRef} />
         </Box>
 
-        <Box sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: "#fff", borderTop: "1px solid", borderColor: "divider" }}>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1.5 }}>
-            {STARTERS.map((s) => (
-              <Chip
-                key={s}
-                label={s}
-                size="small"
-                onClick={() => sendMessage(s)}
-                disabled={loading}
-                sx={{ maxWidth: "100%", height: "auto", py: 0.5, "& .MuiChip-label": { whiteSpace: "normal" } }}
-              />
-            ))}
-          </Box>
-          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+        {/* Composer */}
+        <Box
+          sx={{
+            borderTop: `1px solid ${alpha(brand.primary, 0.1)}`,
+            bgcolor: "#fff",
+            px: { xs: 1.25, sm: 2 },
+            py: { xs: 1.25, sm: 1.5 },
+          }}
+        >
+          {showSuggestions && (
+            <Box sx={{ mb: 1.25 }}>
+              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75 }}>
+                <TipsAndUpdatesOutlinedIcon sx={{ fontSize: 18, color: brand.accent }} />
+                <Typography variant="caption" sx={{ fontWeight: 600, color: brand.gray, letterSpacing: 0.3 }}>
+                  {input.trim() ? "Suggested follow-up questions" : "Try asking"}
+                </Typography>
+              </Stack>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 0.75,
+                  flexWrap: "wrap",
+                  maxHeight: { xs: 120, sm: 96 },
+                  overflowY: "auto",
+                }}
+              >
+                {suggestions.map((s) => (
+                  <Chip
+                    key={s}
+                    label={s}
+                    onClick={() => sendMessage(s)}
+                    disabled={loading}
+                    variant="outlined"
+                    sx={{
+                      height: "auto",
+                      py: 0.6,
+                      borderColor: alpha(brand.primary, 0.2),
+                      bgcolor: alpha(brand.lightBg, 0.8),
+                      "&:hover": { bgcolor: alpha(brand.success, 0.1), borderColor: brand.success },
+                      "& .MuiChip-label": {
+                        whiteSpace: "normal",
+                        textAlign: "left",
+                        fontSize: { xs: "0.72rem", sm: "0.8rem" },
+                        px: 1,
+                      },
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          <Stack direction="row" spacing={1} alignItems="flex-end">
             <TextField
               fullWidth
               multiline
-              maxRows={4}
-              placeholder="Ask about symptoms or a condition…"
+              maxRows={isMobile ? 3 : 4}
+              placeholder="Type a health question (symptoms, conditions, when to see a doctor)…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={loading}
               size="small"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2.5,
+                  bgcolor: alpha(brand.lightBg, 0.5),
+                },
+              }}
             />
             <IconButton
-              color="primary"
               onClick={() => sendMessage(input)}
               disabled={loading || !input.trim()}
-              sx={{ bgcolor: brand.success, color: "#fff", "&:hover": { bgcolor: "#259a84" }, mb: 0.25 }}
+              sx={{
+                width: 44,
+                height: 44,
+                flexShrink: 0,
+                bgcolor: brand.success,
+                color: "#fff",
+                "&:hover": { bgcolor: "#259a84" },
+                "&.Mui-disabled": { bgcolor: alpha(brand.gray, 0.3), color: "#fff" },
+              }}
             >
-              <SendIcon />
+              <SendIcon fontSize="small" />
             </IconButton>
-          </Box>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
-            <Button component={RouterLink} to="/symptom-analysis" size="small" variant="outlined">
-              Symptom AI (detailed)
+          </Stack>
+
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1.25 }}>
+            <Button
+              component={RouterLink}
+              to="/symptom-analysis"
+              size="small"
+              variant="outlined"
+              fullWidth={isMobile}
+              sx={{ borderColor: alpha(brand.primary, 0.35), color: brand.primary, borderRadius: 2 }}
+            >
+              Symptom AI (checklist)
             </Button>
-            <Button component={RouterLink} to="/Book-Appointment" size="small" variant="outlined">
+            <Button
+              component={RouterLink}
+              to="/Book-Appointment"
+              size="small"
+              variant="contained"
+              fullWidth={isMobile}
+              sx={{ bgcolor: brand.primary, borderRadius: 2, "&:hover": { bgcolor: "#1f2058" } }}
+            >
               Book appointment
             </Button>
-          </Box>
+          </Stack>
         </Box>
       </Paper>
     </Box>
