@@ -3,7 +3,7 @@ const {
   detectHealthSummaryIntent,
   buildHealthSummaryReply,
 } = require("./patientHealthContext");
-const { detectBookingIntent, handleBookingRequest } = require("./appointmentAssistant");
+const { shouldRunBookingFlow, processBookingFlow } = require("./appointmentAssistant");
 
 const NVIDIA_BASE = "https://integrate.api.nvidia.com/v1/chat/completions";
 const DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
@@ -306,7 +306,7 @@ Rules:
 - Answer in clear, simple English with short paragraphs or bullet lists when helpful.
 - If urgent screening context is provided, emphasize emergency care when appropriate.
 - When patientHealthRecord is provided, personalize educational answers using ONLY that data — do not invent tests or diagnoses.
-- For booking, direct users to pick a slot in chat or use Book appointment in the menu.
+- For booking: you do NOT book externally. MEDI FLOW books only inside this app via the chat booking wizard (doctor → date → time → in-person or video). Never say you cannot book; tell users to follow the chips in chat.
 - Keep replies under about 200 words unless the user asks for detail.
 - End with a brief reminder to consult a healthcare professional for personal advice.
 
@@ -385,7 +385,23 @@ function baseResponse(extra) {
 }
 
 async function processMedicalChat(message, history, options = {}) {
-  const { patientContext = null, userId = null } = options;
+  const { patientContext = null, userId = null, bookingState = null, selection = null } = options;
+
+  if (shouldRunBookingFlow(message, bookingState, selection)) {
+    const booking = await processBookingFlow({
+      message,
+      userId,
+      patientContext,
+      bookingState,
+      selection,
+    });
+    return baseResponse({
+      reply: booking.reply,
+      actions: booking.actions || [],
+      bookingState: booking.bookingState ?? null,
+      source: booking.source || "rules",
+    });
+  }
 
   if (isGreetingOnly(message)) {
     const extra = patientContext?.profile?.name
@@ -395,15 +411,6 @@ async function processMedicalChat(message, history, options = {}) {
       reply:
         `Hello! I'm your MEDI FLOW medical assistant. Ask about symptoms, conditions, or when to seek care.${extra}`,
       source: "rules",
-    });
-  }
-
-  if (detectBookingIntent(message)) {
-    const booking = await handleBookingRequest(message, userId);
-    return baseResponse({
-      reply: booking.reply,
-      actions: booking.actions || [],
-      source: booking.source || "rules",
     });
   }
 

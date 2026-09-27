@@ -5,7 +5,7 @@ const Appointment = require("../Models/AppoinmentModel");
 
 exports.chat = async (req, res) => {
   try {
-    const { message, history } = req.body || {};
+    const { message, history, bookingState, selection } = req.body || {};
     if (!message || !String(message).trim()) {
       return res.status(400).json({ error: "message is required" });
     }
@@ -16,6 +16,8 @@ exports.chat = async (req, res) => {
     const result = await processMedicalChat(String(message).trim(), history, {
       userId,
       patientContext,
+      bookingState: bookingState || null,
+      selection: selection || null,
     });
     return res.json(result);
   } catch (err) {
@@ -31,7 +33,7 @@ exports.book = async (req, res) => {
       return res.status(401).json({ message: "Sign in as a patient to book appointments." });
     }
 
-    const { doctorId, date, time, doctorName, specialization } = req.body || {};
+    const { doctorId, date, time, doctorName, specialization, visitMode } = req.body || {};
     if (!doctorId || !date || !time) {
       return res.status(400).json({ message: "doctorId, date, and time are required" });
     }
@@ -62,10 +64,14 @@ exports.book = async (req, res) => {
 
     await newAppointment.save();
 
+    const visitLabel =
+      visitMode === "video_call" ? "Video call" : visitMode === "in_person" ? "In-person" : "In-person";
+
     return res.status(201).json({
       message: "Appointment booked successfully",
       appointment: newAppointment,
-      reply: `Your appointment with **${doctorName || "the doctor"}** is booked for **${date}** at **${time}** (status: Pending).`,
+      reply: `✅ **MEDI FLOW booking confirmed**\n\n**${user.name}** with **${doctorName || "the doctor"}** on **${date}** at **${time}** (${visitLabel}). Status: **Pending** — check **My appointments** in the menu.`,
+      bookingState: null,
     });
   } catch (err) {
     console.error("medical-assistant book:", err);

@@ -4,7 +4,7 @@ const getApiBase = () => import.meta.env.VITE_API_URL || "";
  * @param {string} message
  * @param {{ role: string, content: string }[]} history
  */
-export async function sendMedicalAssistantMessage(message, history = []) {
+export async function sendMedicalAssistantMessage(message, history = [], { bookingState = null, selection = null } = {}) {
   const api = getApiBase();
   if (!api) {
     throw new Error("VITE_API_URL is not configured");
@@ -21,7 +21,7 @@ export async function sendMedicalAssistantMessage(message, history = []) {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, bookingState, selection }),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -43,7 +43,7 @@ export async function sendMedicalAssistantMessage(message, history = []) {
   }
 }
 
-export async function bookMedicalAssistantSlot({ doctorId, doctorName, specialization, date, time }) {
+export async function bookMedicalAssistantSlot({ doctorId, doctorName, specialization, date, time, visitMode }) {
   const api = getApiBase();
   if (!api) throw new Error("VITE_API_URL is not configured");
 
@@ -56,7 +56,7 @@ export async function bookMedicalAssistantSlot({ doctorId, doctorName, specializ
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ doctorId, doctorName, specialization, date, time }),
+    body: JSON.stringify({ doctorId, doctorName, specialization, date, time, visitMode }),
   });
 
   if (!res.ok) {
