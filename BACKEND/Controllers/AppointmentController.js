@@ -92,6 +92,46 @@ const getAppointments = async (req, res) => {
   }
 };
 
+// Logged-in patient's appointments (newest first)
+const getMyAppointments = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { useSupabase, getSupabase } = require("../config/supabase");
+    if (useSupabase()) {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("user_id", userId)
+        .order("date", { ascending: false });
+      if (error) throw error;
+      const appointments = (data || []).map((a) => ({
+        _id: a.id,
+        id: a.id,
+        indexno: a.indexno,
+        name: a.name,
+        doctorName: a.doctor_name,
+        doctor_name: a.doctor_name,
+        specialization: a.specialization,
+        date: a.date,
+        time: a.time,
+        status: a.status,
+        userId: a.user_id,
+        user_id: a.user_id,
+      }));
+      return res.status(200).json({ appoinments: appointments });
+    }
+    const appointments = await Appointment.find({ userId });
+    res.status(200).json({ appoinments: appointments });
+  } catch (error) {
+    console.error("Error fetching my appointments:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Get appointment by ID
 const getAppointmentById = async (req, res) => {
   try {
@@ -292,6 +332,7 @@ const rejectAppointment = async (req, res) => {
 module.exports = {
   createAppointment,
   getAppointments,
+  getMyAppointments,
   getAppointmentById,
   updateAppointment,
   deleteAppointment,

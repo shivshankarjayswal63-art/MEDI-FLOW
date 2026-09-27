@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createAppointment,
   getAppointments,
+  getMyAppointments,
   getAppointmentById,
   updateAppointment,
   deleteAppointment,
@@ -17,6 +18,9 @@ router.post("/", authMiddleware, createAppointment);
 
 // Get all appointments
 router.get("/", getAppointments);
+
+// Current user's appointments
+router.get("/me", authMiddleware, getMyAppointments);
 
 // Get appointment by ID
 router.get("/:id", getAppointmentById);

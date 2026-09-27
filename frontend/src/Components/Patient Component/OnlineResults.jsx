@@ -1,13 +1,29 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Typography, Card, CardContent, Button, Link as MuiLink } from "@mui/material";
+import { Typography, Card, CardContent, Button, Box } from "@mui/material";
 import { brand } from "../../theme/brand";
+import { pageTitleSx, pageContainerSx } from "../../theme/responsive";
 import EmptyState from "../EmptyState";
+import { openReportPdf } from "../../utils/openReportPdf";
 
 function OnlineResults() {
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
+  const [openingId, setOpeningId] = useState(null);
+
+  const openReport = async (report) => {
+    const id = report._id || report.id;
+    if (!id) return;
+    setOpeningId(id);
+    try {
+      await openReportPdf(report);
+    } catch {
+      alert("Could not open report. Try again after the API redeploys.");
+    } finally {
+      setOpeningId(null);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -24,8 +40,8 @@ function OnlineResults() {
   }, [navigate]);
 
   return (
-    <>
-      <Typography variant="h4" fontWeight={700} sx={{ color: brand.primary, mb: 3 }}>
+    <Box sx={pageContainerSx}>
+      <Typography variant="h4" sx={{ ...pageTitleSx, color: brand.primary, mb: { xs: 2, md: 3 } }}>
         Online Results
       </Typography>
       {reports.length === 0 ? (
@@ -38,21 +54,23 @@ function OnlineResults() {
               <Typography variant="body2" color="text.secondary">
                 {new Date(r.uploadedAt || r.uploaded_at).toLocaleString()}
               </Typography>
-              <MuiLink
-                href={`${import.meta.env.VITE_API_URL}/${r.filePath || r.file_path}`}
-                target="_blank"
-                rel="noreferrer"
+              <Button
+                size="small"
+                variant="outlined"
+                sx={{ mt: 1 }}
+                disabled={openingId === (r._id || r.id)}
+                onClick={() => openReport(r)}
               >
-                View file
-              </MuiLink>
+                {openingId === (r._id || r.id) ? "Opening…" : "View PDF"}
+              </Button>
             </CardContent>
           </Card>
         ))
       )}
-      <Button sx={{ mt: 2 }} onClick={() => navigate("/patient-dashboard")}>
+      <Button fullWidth={false} sx={{ mt: 2, width: { xs: "100%", sm: "auto" } }} onClick={() => navigate("/patient-dashboard")}>
         Back to dashboard
       </Button>
-    </>
+    </Box>
   );
 }
 

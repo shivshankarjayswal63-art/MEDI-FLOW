@@ -52,6 +52,17 @@ Open in browser:
 
 You should see JSON (doctor list), not HTML.
 
+### Demo data (patient dashboard)
+
+From your machine (with `BACKEND/.env` pointing at the **same** Supabase project as production):
+
+```bash
+cd BACKEND
+npm run db:seed
+```
+
+Then log in as **`patient1@demo.com`** / **`Patient@123`**. The patient dashboard should show appointments, vitals chart, AI history, lab reports, prescriptions, and notifications.
+
 ---
 
 ## Option B — Render (good for long-running Express)

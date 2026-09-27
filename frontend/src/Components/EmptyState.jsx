@@ -6,8 +6,8 @@ export default function EmptyState({ title, message, actionLabel, onAction }) {
     <Box
       sx={{
         textAlign: "center",
-        py: 6,
-        px: 2,
+        py: { xs: 4, sm: 6 },
+        px: { xs: 1.5, sm: 2 },
         borderRadius: 3,
         bgcolor: "white",
         border: "1px dashed",

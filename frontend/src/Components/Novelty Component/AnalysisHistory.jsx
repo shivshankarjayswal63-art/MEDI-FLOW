@@ -68,23 +68,27 @@ function AnalysisHistory() {
   const totalPages = Math.ceil(records.length / recordsPerPage);
 
   return (
-    <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
-            <TimelineIcon style={{ color: "#e6317d", fontSize: 32, marginRight: 12 }} />
-            <Typography 
-              variant="h4" 
-              style={{ 
-                color: "#2b2c6c", 
+    <div className="w-full max-w-6xl mx-auto px-1 sm:px-0 overflow-x-hidden">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+          <div className="flex items-start sm:items-center min-w-0">
+            <TimelineIcon style={{ color: "#e6317d", fontSize: 28, marginRight: 10, flexShrink: 0 }} />
+            <Typography
+              variant="h5"
+              component="h1"
+              sx={{
+                color: "#2b2c6c",
                 fontWeight: 600,
+                fontSize: { xs: "1.15rem", sm: "1.5rem", md: "2rem" },
+                lineHeight: 1.3,
               }}
             >
-              Health Trends - Symptom Analysis History
+              Symptom analysis history
             </Typography>
           </div>
-          
-          <button 
-            className="bg-[#2b2c6c] hover:bg-[#3a3b8a] text-white py-2 px-4 rounded-md flex items-center shadow-md transition duration-300"
+
+          <button
+            type="button"
+            className="hidden sm:flex bg-[#2b2c6c] hover:bg-[#3a3b8a] text-white py-2 px-4 rounded-md items-center shadow-md transition duration-300"
           >
             <DownloadIcon style={{ marginRight: 8 }} />
             EXPORT REPORT
@@ -92,7 +96,7 @@ function AnalysisHistory() {
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center">
             <span className="text-[#71717d] mr-2">Time Range:</span>
             <div className="border border-gray-300 rounded-md p-2 flex items-center cursor-pointer hover:border-[#2FB297]">
@@ -141,15 +145,15 @@ function AnalysisHistory() {
                   <div className="relative">
                     <div className="h-1.5 bg-gradient-to-r from-[#2fb297] to-[#e6317d]"></div>
                     
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center">
-                          <MedicalServicesIcon style={{ color: "#2fb297", marginRight: 10 }} />
-                          <div className="text-xl font-bold text-[#2b2c6c]">
+                    <div className="p-4 sm:p-6">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
+                        <div className="flex items-start min-w-0">
+                          <MedicalServicesIcon style={{ color: "#2fb297", marginRight: 10, flexShrink: 0 }} />
+                          <div className="text-lg sm:text-xl font-bold text-[#2b2c6c] break-words">
                             {record.prediction}
                           </div>
                         </div>
-                        <div className="text-xs text-[#828487] bg-gray-100 px-3 py-1 rounded-full">
+                        <div className="text-xs text-[#828487] bg-gray-100 px-3 py-1 rounded-full self-start shrink-0">
                           {formatDate(record.createdAt)}
                         </div>
                       </div>

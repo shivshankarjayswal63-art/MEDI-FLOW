@@ -22,6 +22,7 @@ import {
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { deleteMedicalReport } from "../../../services/reportService";
+import { openReportPdf } from "../../../utils/openReportPdf";
 import Swal from "sweetalert2";
 
 function ReportItem({ report, onDelete }) {
@@ -35,6 +36,15 @@ function ReportItem({ report, onDelete }) {
   
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleOpenPdf = async () => {
+    handleMenuClose();
+    try {
+      await openReportPdf(report);
+    } catch {
+      Swal.fire("Error", "Could not open this report.", "error");
+    }
   };
 
   const handleDelete = () => {
@@ -166,9 +176,7 @@ function ReportItem({ report, onDelete }) {
           <Box sx={{ display: "flex" }}>
             <Tooltip title="Download">
               <IconButton
-                href={`${import.meta.env.VITE_API_URL}/${report.filePath}`}
-                target="_blank"
-                download
+                onClick={handleOpenPdf}
                 size="small"
                 sx={{ 
                   color: "#2fb297",
@@ -205,23 +213,14 @@ function ReportItem({ report, onDelete }) {
             sx: { borderRadius: 2, minWidth: 175 }
           }}
         >
-          <MenuItem 
-            component="a" 
-            href={`${import.meta.env.VITE_API_URL}/${report.filePath}`}
-            target="_blank"
-            download
-          >
+          <MenuItem onClick={handleOpenPdf}>
             <ListItemIcon>
               <DownloadIcon fontSize="small" sx={{ color: "#2fb297" }} />
             </ListItemIcon>
             <ListItemText>Download</ListItemText>
           </MenuItem>
           
-          <MenuItem 
-            component="a" 
-            href={`${import.meta.env.VITE_API_URL}/${report.filePath}`}
-            target="_blank"
-          >
+          <MenuItem onClick={handleOpenPdf}>
             <ListItemIcon>
               <ViewIcon fontSize="small" sx={{ color: "#2b2c6c" }} />
             </ListItemIcon>

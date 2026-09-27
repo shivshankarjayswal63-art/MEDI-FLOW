@@ -73,9 +73,9 @@ async function clearDemo(supabase) {
 }
 
 function ensureDemoUploadFiles() {
+  const { buildDemoPdf } = require("../lib/demoPdf");
   const uploadsDir = path.join(__dirname, "..", "uploads");
   if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-  const placeholder = "%PDF-1.4\n% MEDI FLOW demo report placeholder\n";
   for (const name of [
     "demo-blood-test.pdf",
     "demo-xray.pdf",
@@ -84,7 +84,7 @@ function ensureDemoUploadFiles() {
     "demo-ecg.pdf",
   ]) {
     const filePath = path.join(uploadsDir, name);
-    if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, placeholder);
+    fs.writeFileSync(filePath, buildDemoPdf(name));
   }
 }
 
@@ -92,18 +92,21 @@ function ensureDemoUploadFiles() {
 async function seedShowcasePatient(supabase, patient, doctors, existingAppts) {
   if (!patient) return;
 
+  await supabase.from("prescriptions").delete().eq("patient_id", patient.id);
+  await supabase.from("diagnoses").delete().eq("patient_id", patient.id);
   await supabase.from("vitals").delete().eq("user_id", patient.id);
   await supabase.from("analyses").delete().eq("user_id", patient.id);
   await supabase.from("medical_reports").delete().eq("user_id", patient.id);
+  await supabase.from("notifications").delete().eq("user_id", patient.id);
 
   const vitals = [];
-  for (let v = 0; v < 12; v++) {
+  for (let v = 0; v < 24; v++) {
     vitals.push({
       user_id: patient.id,
-      bp: 118 + (v % 4) * 3,
-      pulse: 68 + (v % 5),
-      sugar: 88 + (v % 6) * 4,
-      created_at: new Date(Date.now() - v * 5 * 86400000).toISOString(),
+      bp: 112 + (v % 8) * 2,
+      pulse: 64 + (v % 7),
+      sugar: 82 + (v % 9) * 3,
+      created_at: new Date(Date.now() - v * 3 * 86400000).toISOString(),
     });
   }
   await supabase.from("vitals").insert(vitals);
@@ -119,6 +122,11 @@ async function seedShowcasePatient(supabase, patient, doctors, existingAppts) {
     { symptoms: ["dizziness", "fatigue"], prediction: "Anemia (screening)" },
     { symptoms: ["skin rash", "itching"], prediction: "Dermatitis" },
     { symptoms: ["back pain"], prediction: "Musculoskeletal strain" },
+    { symptoms: ["fever", "body ache"], prediction: "Viral fever" },
+    { symptoms: ["wheezing", "cough"], prediction: "Asthma (screening)" },
+    { symptoms: ["burning urination"], prediction: "UTI (screening)" },
+    { symptoms: ["blurred vision", "thirst"], prediction: "Diabetes (screening)" },
+    { symptoms: ["anxiety", "palpitations"], prediction: "Stress-related symptoms" },
   ].map((row, i) => ({
     user_id: patient.id,
     symptoms: row.symptoms,
@@ -128,17 +136,42 @@ async function seedShowcasePatient(supabase, patient, doctors, existingAppts) {
   await supabase.from("analyses").insert(analysisRows);
 
   ensureDemoUploadFiles();
-  await supabase.from("medical_reports").insert([
-    { user_id: patient.id, file_name: "blood-test-full-panel.pdf", file_path: "uploads/demo-blood-test.pdf", file_type: "application/pdf" },
-    { user_id: patient.id, file_name: "chest-xray.pdf", file_path: "uploads/demo-xray.pdf", file_type: "application/pdf" },
-    { user_id: patient.id, file_name: "lipid-profile.pdf", file_path: "uploads/demo-lipid.pdf", file_type: "application/pdf" },
-    { user_id: patient.id, file_name: "urine-analysis.pdf", file_path: "uploads/demo-urine-analysis.pdf", file_type: "application/pdf" },
-    { user_id: patient.id, file_name: "ecg-report.pdf", file_path: "uploads/demo-ecg.pdf", file_type: "application/pdf" },
-  ]);
+  const reportFiles = [
+    { file_name: "blood-test-full-panel.pdf", file_path: "uploads/demo-blood-test.pdf" },
+    { file_name: "chest-xray.pdf", file_path: "uploads/demo-xray.pdf" },
+    { file_name: "lipid-profile.pdf", file_path: "uploads/demo-lipid.pdf" },
+    { file_name: "urine-analysis.pdf", file_path: "uploads/demo-urine-analysis.pdf" },
+    { file_name: "ecg-report.pdf", file_path: "uploads/demo-ecg.pdf" },
+    { file_name: "thyroid-panel.pdf", file_path: "uploads/demo-blood-test.pdf" },
+    { file_name: "hba1c-diabetes-screen.pdf", file_path: "uploads/demo-lipid.pdf" },
+    { file_name: "vitamin-d-level.pdf", file_path: "uploads/demo-urine-analysis.pdf" },
+  ];
+  await supabase.from("medical_reports").insert(
+    reportFiles.map((r, idx) => ({
+      user_id: patient.id,
+      file_name: r.file_name,
+      file_path: r.file_path,
+      file_type: "application/pdf",
+      uploaded_at: new Date(Date.now() - idx * 4 * 86400000).toISOString(),
+    }))
+  );
 
   const showcaseAppts = [];
-  const statusPlan = ["Completed", "Completed", "Accepted", "Pending", "Pending", "Accepted", "Completed", "Pending"];
-  for (let i = 1; i <= 8; i++) {
+  const statusPlan = [
+    "Completed",
+    "Completed",
+    "Completed",
+    "Accepted",
+    "Accepted",
+    "Pending",
+    "Pending",
+    "Pending",
+    "Accepted",
+    "Completed",
+    "Pending",
+    "Accepted",
+  ];
+  for (let i = 1; i <= 12; i++) {
     const doc = doctors[i % doctors.length];
     const daysAhead = i <= 2 ? -i * 7 : i - 2;
     showcaseAppts.push({
@@ -159,8 +192,17 @@ async function seedShowcasePatient(supabase, patient, doctors, existingAppts) {
   const { data: p1Appts, error: p1Err } = await supabase.from("appointments").insert(showcaseAppts).select();
   if (p1Err) throw p1Err;
 
+  await supabase.from("notifications").insert([
+    { user_id: patient.id, title: "Lab results ready", body: "Your blood panel and lipid profile are available under Lab results.", read: false },
+    { user_id: patient.id, title: "Appointment confirmed", body: "Dr. Nimal Cardio accepted your cardiology follow-up.", read: false },
+    { user_id: patient.id, title: "Prescription updated", body: "Vitamin D and Paracetamol — see Prescriptions on your dashboard.", read: true },
+    { user_id: patient.id, title: "Vitals reminder", body: "Log your blood pressure this week to keep trends up to date.", read: false },
+    { user_id: patient.id, title: "AI symptom check", body: "You have 15 saved symptom analyses in your history.", read: true },
+    { user_id: patient.id, title: "Welcome, Alice", body: "This account is loaded with demo data for the full patient portal.", read: true },
+  ]);
+
   const allPatientAppts = [...(existingAppts || []).filter((a) => a.user_id === patient.id), ...(p1Appts || [])];
-  const forRx = allPatientAppts.slice(0, 5);
+  const forRx = allPatientAppts.slice(0, 8);
   if (forRx.length) {
     await supabase.from("prescriptions").insert(
       forRx.map((a, idx) => ({
@@ -175,7 +217,7 @@ async function seedShowcasePatient(supabase, patient, doctors, existingAppts) {
       }))
     );
     await supabase.from("diagnoses").insert(
-      forRx.slice(0, 4).map((a, idx) => ({
+      forRx.slice(0, 6).map((a, idx) => ({
         appointment_id: a.id,
         patient_id: patient.id,
         doctor_id: a.doctor_id,
@@ -247,7 +289,7 @@ async function main() {
   const statuses = ["Pending", "Accepted", "Completed", "Accepted", "Pending"];
   const appointments = [];
   for (let i = 1; i <= 15; i++) {
-    const patient = patientsOnly[i % patientsOnly.length];
+    const patient = i <= 9 ? p1 : patientsOnly[i % patientsOnly.length];
     const doc = insertedDoctors[i % insertedDoctors.length];
     appointments.push({
       indexno: `DEMO-${String(i).padStart(4, "0")}`,

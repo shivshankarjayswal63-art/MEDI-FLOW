@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import Nav from "../Nav Component/Nav";
 import { usePatientPortal } from "./PatientPortalContext";
 import axios from "axios";
-import { Container, Typography, TextField, Button, Alert, MenuItem } from "@mui/material";
+import { Container, Typography, TextField, Button, Alert, MenuItem, Box } from "@mui/material";
 import { brand } from "../../theme/brand";
+import { pageTitleSx, pageContainerSx } from "../../theme/responsive";
 
 function RequestConsultation() {
   const inPortal = usePatientPortal();
@@ -54,8 +55,9 @@ function RequestConsultation() {
   };
 
   const inner = (
-      <Container maxWidth="sm" sx={{ py: inPortal ? 0 : 4 }}>
-        <Typography variant="h4" fontWeight={700} sx={{ color: brand.primary, mb: 2 }}>
+      <Container maxWidth="sm" disableGutters={inPortal} sx={{ py: inPortal ? 0 : { xs: 2, md: 4 }, px: inPortal ? 0 : { xs: 2, sm: 3 } }}>
+        <Box sx={pageContainerSx}>
+        <Typography variant="h4" sx={{ ...pageTitleSx, color: brand.primary, mb: 2 }}>
           Request a Consultation
         </Typography>
         {msg && <Alert severity="success" sx={{ mb: 2 }}>{msg}</Alert>}
@@ -84,6 +86,7 @@ function RequestConsultation() {
             Submit request
           </Button>
         </form>
+        </Box>
       </Container>
   );
 

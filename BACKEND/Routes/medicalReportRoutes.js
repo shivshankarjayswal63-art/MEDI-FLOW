@@ -6,10 +6,12 @@ const {
   uploadReport,
   getUserReports,
   deleteReport,
-} = require("../Controllers/medicalReportController"); // FIXED PATH
+  downloadReport,
+} = require("../Controllers/medicalReportController");
 
 router.post("/upload", auth, upload.single("report"), uploadReport);
 router.get("/", auth, getUserReports);
+router.get("/:id/download", auth, downloadReport);
 router.delete("/:id", auth, deleteReport);
 
 module.exports = router;
