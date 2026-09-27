@@ -29,20 +29,26 @@ const registerUser = async (req, res) => {
       city,
       gender,
       dateOfBirth,
+      role: "patient",
     });
 
     await newUser.save();
 
     // Generate JWT Token
+    const role = newUser.role || "patient";
     const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
+      { id: newUser._id, email: newUser.email, role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
+    const u = { ...newUser };
+    delete u.password;
+
     res.status(201).json({
       message: "User registered successfully",
-      user: newUser,
+      user: u,
+      role,
       token: token,
     });
 
@@ -67,13 +73,27 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    const roleMap = {
+      "useradmin@gmail.com": "user_admin",
+      "pharmacyadmin@gmail.com": "pharmacy_admin",
+      "appointmentadmin@gmail.com": "appointment_admin",
+    };
+    const role = user.role || roleMap[email.toLowerCase()] || "patient";
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, email: user.email, role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    res.status(200).json({ message: "Login successful", user, token });
+    const safeUser = { ...user };
+    delete safeUser.password;
+
+    res.status(200).json({
+      message: "Login successful",
+      user: safeUser,
+      role,
+      token,
+    });
 
   } catch (err) {
     console.error(err);

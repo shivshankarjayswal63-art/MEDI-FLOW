@@ -58,4 +58,8 @@ const appointmentSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Appointment", appointmentSchema);
+const { useSupabase, createModel } = require("../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("appointments")
+  : mongoose.model("Appointment", appointmentSchema);

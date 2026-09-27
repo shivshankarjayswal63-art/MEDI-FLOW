@@ -22,15 +22,26 @@ const getDoctorProfile = async (req, res) => {
 };
 
 
-// Get All Doctors
+function stripDoctorPassword(doc) {
+  const d = doc?.toObject ? doc.toObject() : { ...doc };
+  delete d.password;
+  return d;
+}
+
+// Get All Doctors (passwords stripped)
 const getAllDoctors = async (req, res) => {
   try {
     const doctors = await Doctor.find();
-    res.status(200).json(doctors);
+    const list = Array.isArray(doctors)
+      ? doctors.map((doc) => stripDoctorPassword(doc))
+      : [];
+    res.status(200).json(list);
   } catch (err) {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+const getPublicDoctors = getAllDoctors;
 
 // Get Doctor by ID
 const getDoctorById = async (req, res) => {
@@ -113,6 +124,7 @@ const deleteDoctor = async (req, res) => {
 // Export Controllers
 exports.getDoctorProfile = getDoctorProfile;
 exports.getAllDoctors = getAllDoctors;
+exports.getPublicDoctors = getPublicDoctors;
 exports.getDoctorById = getDoctorById;
 exports.updateDoctor = updateDoctor;
 exports.deleteDoctor = deleteDoctor;

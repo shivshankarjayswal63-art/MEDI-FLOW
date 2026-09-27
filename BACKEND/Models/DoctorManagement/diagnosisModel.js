@@ -40,4 +40,8 @@ const diagnosisSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Diagnosis", diagnosisSchema);
+const { useSupabase, createModel } = require("../../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("diagnoses")
+  : mongoose.model("Diagnosis", diagnosisSchema);

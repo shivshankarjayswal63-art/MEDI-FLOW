@@ -57,8 +57,8 @@ const stockSchema=new Schema({
 },
     {timestamps:true});
     
-module.exports=mongoose.model(
-    'Stock',//file name
-    stockSchema);//function name
+const { useSupabase, createModel } = require("../lib/supabaseModel");
 
-    //model page for stocks
+module.exports = useSupabase()
+  ? createModel("stock")
+  : mongoose.model("Stock", stockSchema);

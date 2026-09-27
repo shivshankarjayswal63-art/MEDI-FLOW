@@ -1,60 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { Box, CircularProgress } from "@mui/material";
 
-//Main Components
-import Home from "./Components/Main Component/Home";
-import AboutUs from "./Components/Main Component/AboutUs";
-import ContactUs from "./Components/Main Component/ContactUs";
-import OurFacilities from "./Components/Main Component/OurFacilities";
-import FindADoctor from "./Components/Doctor Component/FindADoctor";
+const PageLoader = () => (
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    minHeight="40vh"
+  >
+    <CircularProgress sx={{ color: "#2b2c6c" }} />
+  </Box>
+);
 
-//User Components
-import UserManagement from "./Components/User Component/UserAdmin/UserManagement";
-import MyAccount from "./Components/User Component/UserProfile/MyAccount";
-import Login from "./Components/User Component/Login";
-import Registration from "./Components/User Component/Registration";
-import UDashboard from "./Components/User Component/UserAdmin/UDashboard";
-import ForgotPassword from "./Components/User Component/UserProfile/ForgotPassword";
-import AddNewUser from "./Components/User Component/UserAdmin/AddNewUser";
+const Home = lazy(() => import("./Components/Main Component/Home"));
+const AboutUs = lazy(() => import("./Components/Main Component/AboutUs"));
+const ContactUs = lazy(() => import("./Components/Main Component/ContactUs"));
+const OurFacilities = lazy(() => import("./Components/Main Component/OurFacilities"));
+const FindADoctor = lazy(() => import("./Components/Doctor Component/FindADoctor"));
+const PatientDashboard = lazy(() => import("./Components/Patient Component/PatientDashboard"));
+const OnlineResults = lazy(() => import("./Components/Patient Component/OnlineResults"));
+const RequestConsultation = lazy(() => import("./Components/Patient Component/RequestConsultation"));
 
-//Pharmacy Components
-import PDashboard from "./Components/Pharmacy Component/PDashboard";
-import StockAnalytics from "./Components/Pharmacy Component/StockAnalytics";
-import OrderAnalytics from "./Components/Pharmacy Component/OrderAnalytics";
-import StockAdding from "./Components/Pharmacy Component/StockAdding";
-import RecentOrders from "./Components/Prescription Component/RecentOrders";
+const UserManagement = lazy(() => import("./Components/User Component/UserAdmin/UserManagement"));
+const MyAccount = lazy(() => import("./Components/User Component/UserProfile/MyAccount"));
+const Login = lazy(() => import("./Components/User Component/Login"));
+const Registration = lazy(() => import("./Components/User Component/Registration"));
+const UDashboard = lazy(() => import("./Components/User Component/UserAdmin/UDashboard"));
+const ForgotPassword = lazy(() => import("./Components/User Component/UserProfile/ForgotPassword"));
+const AddNewUser = lazy(() => import("./Components/User Component/UserAdmin/AddNewUser"));
 
-//Appointment Components
-import ADashboard from "./Components/Appointment Component/ADashboard";
-import BookAppointent from "./Components/Appointment Component/BookAppointent";
-import AppoinmentDisplay from "./Components/Appointment Component/DisplayAppoinment";
-import AppoinmentManagement from "./Components/Appointment Component/AppoinmentAdmin/AppoinmentManagement";
-import RejectedAppoinment from "./Components/Appointment Component/AppoinmentAdmin/RejectedAppoinmentPage";
+const PDashboard = lazy(() => import("./Components/Pharmacy Component/PDashboard"));
+const StockAnalytics = lazy(() => import("./Components/Pharmacy Component/StockAnalytics"));
+const OrderAnalytics = lazy(() => import("./Components/Pharmacy Component/OrderAnalytics"));
+const StockAdding = lazy(() => import("./Components/Pharmacy Component/StockAdding"));
+const RecentOrders = lazy(() => import("./Components/Prescription Component/RecentOrders"));
 
-//Doctor Components
-import DoctorLogin from "./Components/Doctor Component/DoctorLogin";
-import DoctorRegistration from "./Components/Doctor Component/DoctorRegistration";
-import DDashboard from "./Components/Doctor Component/DDashboard";
-import ViewAppointments from "./Components/Doctor Component/ViewAppoinments";
-import DoctorLeave from "./Components/Doctor Component/DoctorLeave";
-import DoctorDiagnosis from "./Components/Doctor Component/DoctorDiagnosis";
-import DiagnosisView from "./Components/Doctor Component/DiagnosisView";
+const ADashboard = lazy(() => import("./Components/Appointment Component/ADashboard"));
+const BookAppointent = lazy(() => import("./Components/Appointment Component/BookAppointent"));
+const AppoinmentDisplay = lazy(() => import("./Components/Appointment Component/DisplayAppoinment"));
+const AppoinmentManagement = lazy(() => import("./Components/Appointment Component/AppoinmentAdmin/AppoinmentManagement"));
+const RejectedAppoinment = lazy(() => import("./Components/Appointment Component/AppoinmentAdmin/RejectedAppoinmentPage"));
 
-//Novelty Components
-import NoveltyComponent from "./Components/Novelty Component/NoveltyComponent";
-import AnalysisHistory from "./Components/Novelty Component/AnalysisHistory";
-import HealthTrends from "./Components/Novelty Component/HealthTrends";
-import VitalsInputForm from "./Components/Novelty Component/VitalsInputForm";
-import ChatbotLauncher from "./Components/Novelty Component/ChatbotLauncher";
-import HealthChatBot from "./Components/Novelty Component/HealthChatBot";
+const DoctorLogin = lazy(() => import("./Components/Doctor Component/DoctorLogin"));
+const DoctorRegistration = lazy(() => import("./Components/Doctor Component/DoctorRegistration"));
+const DDashboard = lazy(() => import("./Components/Doctor Component/DDashboard"));
+const ViewAppointments = lazy(() => import("./Components/Doctor Component/ViewAppoinments"));
+const DoctorLeave = lazy(() => import("./Components/Doctor Component/DoctorLeave"));
+const DoctorDiagnosis = lazy(() => import("./Components/Doctor Component/DoctorDiagnosis"));
+const DiagnosisView = lazy(() => import("./Components/Doctor Component/DiagnosisView"));
+
+const NoveltyComponent = lazy(() => import("./Components/Novelty Component/NoveltyComponent"));
+const AnalysisHistory = lazy(() => import("./Components/Novelty Component/AnalysisHistory"));
+const HealthTrends = lazy(() => import("./Components/Novelty Component/HealthTrends"));
+const VitalsInputForm = lazy(() => import("./Components/Novelty Component/VitalsInputForm"));
+const ChatbotLauncher = lazy(() => import("./Components/Novelty Component/ChatbotLauncher"));
+const HealthChatBot = lazy(() => import("./Components/Novelty Component/HealthChatBot"));
 
 function App() {
   const [chatOpen, setChatOpen] = useState(false);
-  const location = useLocation(); // get current route
+  const location = useLocation();
 
-  //  Hide chatbot on login & registration
   const hideChatbotOn = [
     "/login",
     "/registration",
@@ -71,17 +79,20 @@ function App() {
     "/User-Dashboard",
   ];
   const showChatbot = !hideChatbotOn.includes(location.pathname);
+
   return (
     <div>
-      <React.Fragment>
+      <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/About-Us" element={<AboutUs />} />
           <Route path="/Contact-Us" element={<ContactUs />} />
           <Route path="/Our-Facilities" element={<OurFacilities />} />
           <Route path="/Find-Doctor" element={<FindADoctor />} />
+          <Route path="/patient-dashboard" element={<PatientDashboard />} />
+          <Route path="/online-results" element={<OnlineResults />} />
+          <Route path="/request-consultation" element={<RequestConsultation />} />
 
-          {/*User Components*/}
           <Route path="/User-Management" element={<UserManagement />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registration" element={<Registration />} />
@@ -90,20 +101,17 @@ function App() {
           <Route path="/User-Account" element={<MyAccount />} />
           <Route path="/Add-New-Patient" element={<AddNewUser />} />
 
-          {/* Novelty Component Route */}
           <Route path="/symptom-analysis" element={<NoveltyComponent />} />
           <Route path="/enter-vitals" element={<VitalsInputForm />} />
           <Route path="/analysis-history" element={<AnalysisHistory />} />
           <Route path="/health-trends" element={<HealthTrends />} />
 
-          {/*Pharmacy Components*/}
           <Route path="/Pharmacy-Dashboard" element={<PDashboard />} />
           <Route path="/Pharmacy-Stocks" element={<StockAnalytics />} />
           <Route path="/Pharmacy-Orders" element={<OrderAnalytics />} />
           <Route path="/Stock-Adding" element={<StockAdding />} />
           <Route path="/recent-orders" element={<RecentOrders />} />
 
-          {/*Doctor Components*/}
           <Route path="/login-doctor" element={<DoctorLogin />} />
           <Route path="/register-doctor" element={<DoctorRegistration />} />
           <Route path="/Doctor-Dashboard" element={<DDashboard />} />
@@ -116,9 +124,8 @@ function App() {
             path="/Doctor-Dashboard/appointmnet/Diagnosis/:appointmentId"
             element={<DoctorDiagnosis />}
           />
-          <Route path="/Doctor-Dashboard/Diagnosis" element={<DiagnosisView  />}/>
+          <Route path="/Doctor-Dashboard/Diagnosis" element={<DiagnosisView />} />
 
-          {/*Appoinment Components*/}
           <Route path="/Book-Appointment" element={<BookAppointent />} />
           <Route path="/Appoinment-Display" element={<AppoinmentDisplay />} />
           <Route path="/Appointment-Dashboard" element={<ADashboard />} />
@@ -128,14 +135,13 @@ function App() {
           />
           <Route path="Rijected-Appoinment" element={<RejectedAppoinment />} />
         </Routes>
-        {/*  Conditionally show Chatbot */}
         {showChatbot && (
           <>
             <ChatbotLauncher onOpen={() => setChatOpen(true)} />
             <HealthChatBot open={chatOpen} onClose={() => setChatOpen(false)} />
           </>
         )}
-      </React.Fragment>
+      </Suspense>
     </div>
   );
 }

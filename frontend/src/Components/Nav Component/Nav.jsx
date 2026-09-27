@@ -27,7 +27,7 @@ function Nav() {
       <div className="w-full h-[50px] flex fixed top-0 left-0 z-50 shadow-md">
         <div className="w-[1440px] bg-[#2b2c6c] flex items-center">
           <Link
-            to="/Find-doctor"
+            to="/Find-Doctor"
             className="ml-[110px] text-white text-xl font-semibold relative group hover:text-[#28b6a2] transition-colors duration-300 cursor-pointer"
           >
             FIND A DOCTOR

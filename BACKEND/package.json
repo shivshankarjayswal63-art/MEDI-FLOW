@@ -5,6 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
+    "supabase:migrate": "node scripts/apply-supabase-migration.js",
+    "db:seed": "node scripts/seed-demo-data.js",
     "build": "echo 'No build step for backend'",
     "vercel-build": "echo 'No vercel build step for backend'"
   },
@@ -22,7 +24,9 @@
     "mongoose": "^8.14.1",
     "multer": "^1.4.5-lts.2",
     "nodemailer": "^6.10.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "@supabase/supabase-js": "^2.49.8",
+    "pg": "^8.14.1"
   },
   "keywords": [],
   "description": ""

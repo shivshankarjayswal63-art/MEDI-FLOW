@@ -76,14 +76,19 @@ const HealthChatBot = ({ open, onClose }) => {
       // Store token in case we need it for authenticated API calls
       const token = localStorage.getItem("token");
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const res = await fetch("http://localhost:8000/api/chat/analyze", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : ""
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({ message: input }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       
       if (!res.ok) {
         throw new Error(`Server responded with ${res.status}`);
@@ -126,9 +131,15 @@ const HealthChatBot = ({ open, onClose }) => {
       }
     } catch (err) {
       console.error("Error in chat:", err);
+      const isTimeout = err.name === "AbortError";
       setMessages((prev) => [
         ...prev.filter((msg) => !msg.temp),
-        { sender: "bot", text: "Error connecting to the server. Please try again later." },
+        {
+          sender: "bot",
+          text: isTimeout
+            ? "AI server is not running. Start it on port 8000 (BACKEND/ai-model) or use Symptom Analysis in the menu."
+            : "Error connecting to the server. Please try again later.",
+        },
       ]);
       
       setNotification({

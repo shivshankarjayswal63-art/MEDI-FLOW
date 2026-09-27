@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getDoctorProfile,
   getAllDoctors,
+  getPublicDoctors,
   getDoctorById,
   updateDoctor,
   deleteDoctor,
@@ -10,6 +11,7 @@ const {
 const authMiddleware = require("../../Middleware/authMiddleware");
 
 router.get("/profile", authMiddleware, getDoctorProfile); // Protected Route
+router.get("/public", getPublicDoctors);
 router.get("/", getAllDoctors);
 router.get("/:id", getDoctorById);
 router.put("/:id", updateDoctor);

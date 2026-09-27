@@ -15,4 +15,8 @@ const vitalsSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Vitals", vitalsSchema);
+const { useSupabase, createModel } = require("../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("vitals")
+  : mongoose.model("Vitals", vitalsSchema);

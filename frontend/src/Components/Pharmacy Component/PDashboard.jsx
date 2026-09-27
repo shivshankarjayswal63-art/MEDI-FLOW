@@ -49,69 +49,34 @@ function PDashboard() {
   const [recentStock, setRecentStock] = useState([]);
 
   useEffect(() => {
-    // Simulate fetching dashboard data
+    const token = localStorage.getItem("token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const fetchData = async () => {
       try {
         setLoading(true);
-        // In a real app, these would be actual API calls:
-        // const response = await axios.get("http://localhost:5000/api/pharmacy/dashboard-stats");
-
-        // Simulated data
-        setTimeout(() => {
-          setStats({
-            totalItems: 247,
-            lowStockItems: 12,
-            expiringItems: 8,
-            categories: 18,
-          });
-
-          setRecentStock([
-            {
-              _id: "1",
-              name: "Amoxicillin 500mg",
-              type: "Tablet",
-              quantity: 320,
-              expiryDate: "2025-06-15",
-              status: "Good",
-            },
-            {
-              _id: "2",
-              name: "Paracetamol 650mg",
-              type: "Tablet",
-              quantity: 155,
-              expiryDate: "2025-03-22",
-              status: "Medium",
-            },
-            {
-              _id: "3",
-              name: "Cetirizine 10mg",
-              type: "Tablet",
-              quantity: 8,
-              expiryDate: "2025-01-10",
-              status: "Low",
-            },
-            {
-              _id: "4",
-              name: "Metformin 850mg",
-              type: "Tablet",
-              quantity: 43,
-              expiryDate: "2024-12-05",
-              status: "Expiring Soon",
-            },
-            {
-              _id: "5",
-              name: "Azithromycin 250mg",
-              type: "Capsule",
-              quantity: 82,
-              expiryDate: "2025-08-30",
-              status: "Good",
-            },
-          ]);
-
-          setLoading(false);
-        }, 1000);
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/dashboard/summary?portal=pharmacy`,
+          { headers }
+        );
+        setStats({
+          totalItems: data.totalItems,
+          lowStockItems: data.lowStockItems,
+          expiringItems: data.expiringItems,
+          categories: data.categories,
+        });
+        setRecentStock(
+          (data.recentStock || []).map((item) => ({
+            _id: item.id || item._id,
+            name: item.name,
+            type: item.type,
+            quantity: item.quantity,
+            expiryDate: item.expire_date || item.expireDate,
+            status: item.quantity < 15 ? "Low" : "Good",
+          }))
+        );
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+      } finally {
         setLoading(false);
       }
     };

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { routeForRole, inferRoleFromEmail } from "../../utils/authRoutes";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -63,6 +64,14 @@ function Login() {
         formData
       );
       localStorage.setItem("token", response.data.token);
+      const role =
+        response.data.role ||
+        response.data.user?.role ||
+        inferRoleFromEmail(formData.email);
+      localStorage.setItem("role", role);
+      if (response.data.user?._id) {
+        localStorage.setItem("userId", response.data.user._id);
+      }
 
       Swal.fire({
         toast: true,
@@ -81,27 +90,8 @@ function Login() {
       });
 
       setTimeout(() => {
-        const adminEmails = [
-          "useradmin@gmail.com",
-          "pharmacyadmin@gmail.com",
-          "doctoradmin@gmail.com",
-          "appointmentadmin@gmail.com",
-        ];
-
-        if (adminEmails.includes(formData.email)) {
-          if (formData.email === "useradmin@gmail.com") {
-            navigate("/User-Dashboard");
-          } else if (formData.email === "pharmacyadmin@gmail.com") {
-            navigate("/Pharmacy-Dashboard");
-          } else if (formData.email === "doctoradmin@gmail.com") {
-            navigate("/Doctor-Dashboard");
-          } else if (formData.email === "appointmentadmin@gmail.com") {
-            navigate("/Appointment-Dashboard");
-          }
-        } else {
-          navigate("/");
-        }
-      }, 2500);
+        navigate(routeForRole(role));
+      }, 800);
     } catch (error) {
       Swal.fire({
         icon: "error",

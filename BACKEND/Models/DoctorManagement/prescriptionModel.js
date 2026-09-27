@@ -57,4 +57,8 @@ const prescriptionSchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Prescription", prescriptionSchema);
+const { useSupabase, createModel } = require("../../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("prescriptions")
+  : mongoose.model("Prescription", prescriptionSchema);

@@ -60,6 +60,11 @@ const userSchema = new Schema({
     type: Date,
     default: null,
   },
+  role: {
+    type: String,
+    enum: ["patient", "user_admin", "pharmacy_admin", "appointment_admin"],
+    default: "patient",
+  },
 });
 
 // Enforce required fields **ONLY during Profile Update**
@@ -88,4 +93,8 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-module.exports = mongoose.model("User", userSchema);
+const { useSupabase, createModel } = require("../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("users")
+  : mongoose.model("User", userSchema);

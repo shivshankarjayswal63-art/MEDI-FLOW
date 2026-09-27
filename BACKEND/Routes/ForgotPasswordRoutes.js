@@ -32,7 +32,7 @@ router.post("/forgot-password", async (req, res) => {
 
     // Save the reset token and expiration date to the user's profile
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = resetTokenExpiration;
+    user.resetPasswordExpires = new Date(resetTokenExpiration);
     await user.save();
 
     // Send email with the reset token

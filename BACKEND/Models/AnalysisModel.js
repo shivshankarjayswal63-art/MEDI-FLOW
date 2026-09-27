@@ -14,4 +14,8 @@ const analysisSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Analysis", analysisSchema);
+const { useSupabase, createModel } = require("../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("analyses")
+  : mongoose.model("Analysis", analysisSchema);

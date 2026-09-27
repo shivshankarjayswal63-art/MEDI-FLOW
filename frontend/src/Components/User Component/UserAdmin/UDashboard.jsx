@@ -74,80 +74,37 @@ function UDashboard() {
   const [recentPatients, setRecentPatients] = useState([]);
 
   useEffect(() => {
-    // Simulating API call to fetch dashboard data
+    const token = localStorage.getItem("token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const fetchDashboardData = async () => {
       try {
-        // In a real app, you would fetch this data from your backend API
-        // For demo purposes, we're using setTimeout to simulate a network request
-        setTimeout(() => {
-          setStats({
-            totalPatients: 1245,
-            newPatients: 48,
-            appointmentsToday: 32,
-            criticalCases: 7,
-          });
-
-          setRecentPatients([
-            {
-              id: 1,
-              name: "John Doe",
-              age: 45,
-              gender: "Male",
-              condition: "Diabetes",
-              status: "Stable",
-              lastVisit: "2025-05-08T08:30:00",
-              bloodGroup: "O+",
-            },
-            {
-              id: 2,
-              name: "Sarah Johnson",
-              age: 38,
-              gender: "Female",
-              condition: "Hypertension",
-              status: "Under Observation",
-              lastVisit: "2025-05-09T10:15:00",
-              bloodGroup: "A-",
-            },
-            {
-              id: 3,
-              name: "Michael Brown",
-              age: 62,
-              gender: "Male",
-              condition: "Cardiac Issue",
-              status: "Critical",
-              lastVisit: "2025-05-09T14:45:00",
-              bloodGroup: "B+",
-            },
-            {
-              id: 4,
-              name: "Emily Wilson",
-              age: 29,
-              gender: "Female",
-              condition: "Pregnancy",
-              status: "Stable",
-              lastVisit: "2025-05-08T11:30:00",
-              bloodGroup: "AB+",
-            },
-            {
-              id: 5,
-              name: "James Garcia",
-              age: 52,
-              gender: "Male",
-              condition: "Post-Surgery",
-              status: "Recovering",
-              lastVisit: "2025-05-07T09:00:00",
-              bloodGroup: "O-",
-            },
-          ]);
-
-          setLoading(false);
-        }, 1500);
+        setLoading(true);
+        const [summaryRes, usersRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}/api/dashboard/summary?portal=user`, { headers }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/users`, { headers }),
+        ]);
+        setStats(summaryRes.data);
+        const users = usersRes.data || [];
+        const patients = users
+          .filter((u) => !u.role || u.role === "patient")
+          .slice(0, 5)
+          .map((u) => ({
+            id: u._id,
+            name: u.name,
+            gender: u.gender || "—",
+            bloodGroup: u.bloodGroup || u.blood_group || "—",
+            status: "Stable",
+            lastVisit: u.regDate || u.reg_date || new Date().toISOString(),
+            condition: "—",
+            age: "—",
+          }));
+        setRecentPatients(patients);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+      } finally {
         setLoading(false);
       }
     };
-
     fetchDashboardData();
   }, []);
 

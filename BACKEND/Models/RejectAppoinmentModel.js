@@ -69,4 +69,8 @@ const rejectedAppointmentSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("RejectedAppointment", rejectedAppointmentSchema);
+const { useSupabase, createModel } = require("../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("rejected_appointments")
+  : mongoose.model("RejectedAppointment", rejectedAppointmentSchema);

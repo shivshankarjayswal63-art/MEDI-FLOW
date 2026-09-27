@@ -62,4 +62,8 @@ const doctorSchema = new Schema({
   
 }, { timestamps: true });
 
-module.exports = mongoose.model("Doctor", doctorSchema);
+const { useSupabase, createModel } = require("../../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("doctors")
+  : mongoose.model("Doctor", doctorSchema);

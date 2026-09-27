@@ -92,31 +92,29 @@ const DDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // Get doctor profile data (mock data for this example)
-      const doctorProfile = {
-        name: "Dr. Sarah Johnson",
-        specialization: "Cardiology",
-        hospital: "City General Hospital",
-        experience: "8 years",
-        rating: 4.7,
-        patients: 1245,
-        photo: "/doctor-avatar.jpg"
-      };
-      setDoctorData(doctorProfile);
+      const appointmentsResponse = await axios.get(APPOINTMENTS_API);
+      const appointments = appointmentsResponse.data.appoinments || appointmentsResponse.data || [];
 
-      // Get doctor's appointments
-      const appointmentsResponse = await axios.get(`${APPOINTMENTS_API}?doctorId=doctor123`);
-      const appointments = appointmentsResponse.data.appoinments || [];
+      let prescriptions = [];
+      try {
+        const prescriptionsResponse = await axios.get(`${import.meta.env.VITE_API_URL}/api/prescriptions`, { headers });
+        prescriptions = prescriptionsResponse.data || [];
+      } catch {
+        prescriptions = [];
+      }
 
-      // Get doctor's prescriptions
-      const prescriptionsResponse = await axios.get(`${PRESCRIPTIONS_API}`);
-      const prescriptions = prescriptionsResponse.data || [];
-      console.log("Prescriptions:", prescriptions);
+      let summary = {};
+      try {
+        const s = await axios.get(`${import.meta.env.VITE_API_URL}/api/dashboard/summary?portal=doctor`, { headers });
+        summary = s.data || {};
+      } catch {
+        summary = {};
+      }
 
-      // Get doctor's leave requests
-      const leavesResponse = await axios.get(`${LEAVES_API}?doctorId=doctor123`);
-      const leaves = leavesResponse.data || [];
+      const leaves = [];
 
       // Calculate statistics
       const pendingAppointments = appointments.filter(a => a.status === "Pending").length;
@@ -129,11 +127,11 @@ const DDashboard = () => {
 
       setStats({
         totalAppointments: appointments.length,
-        todayAppointments: todayAppointments.length,
-        pendingAppointments,
+        todayAppointments: summary.appointmentsToday ?? todayAppointments.length,
+        pendingAppointments: summary.pendingDiagnoses ?? pendingAppointments,
         completedAppointments,
         prescriptions: prescriptions.length,
-        pendingLeaves: leaves.filter(l => l.status === "Pending").length,
+        pendingLeaves: leaves.filter((l) => l.status === "Pending").length,
       });
 
       // Get upcoming appointments (next 5 days)

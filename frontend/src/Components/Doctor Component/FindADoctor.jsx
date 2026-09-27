@@ -1,13 +1,89 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Nav from "../Nav Component/Nav";
+import axios from "axios";
+import { Box, Container, Grid, Card, CardContent, Typography, Chip, Button, TextField, Avatar } from "@mui/material";
+import { brand } from "../../theme/brand";
+import EmptyState from "../../components/EmptyState";
 
 function FindADoctor() {
+  const [doctors, setDoctors] = useState([]);
+  const [filter, setFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios
+      .get(`${import.meta.env.VITE_API_URL}/api/doctor/public`)
+      .then((r) => setDoctors(r.data || []))
+      .catch(() => setDoctors([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const list = doctors.filter(
+    (d) =>
+      !filter ||
+      d.name?.toLowerCase().includes(filter.toLowerCase()) ||
+      d.specialization?.toLowerCase().includes(filter.toLowerCase())
+  );
+
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-b from-[#f4f6fb] to-white">
       <Nav />
-      <div className="w-full h-screen flex items-center justify-center bg-[#2b2c6c]">
-        <h1 className="text-white text-4xl font-bold">Find A Doctor</h1>  </div>
-        
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Typography variant="h4" fontWeight={700} sx={{ color: brand.primary, mb: 1 }}>
+          Find a Doctor
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 3 }}>
+          Search by name or specialization and book an appointment in one click.
+        </Typography>
+        <TextField
+          fullWidth
+          placeholder="Search doctors..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          sx={{ mb: 4, maxWidth: 480 }}
+        />
+        {loading ? (
+          <Typography>Loading doctors...</Typography>
+        ) : list.length === 0 ? (
+          <EmptyState
+            title="No doctors found"
+            message="Run npm run db:seed in BACKEND to load demo doctors."
+          />
+        ) : (
+          <Grid container spacing={3}>
+            {list.map((doc) => (
+              <Grid item xs={12} sm={6} md={4} key={doc._id || doc.id}>
+                <Card sx={{ borderRadius: 3, height: "100%" }}>
+                  <CardContent>
+                    <Box display="flex" gap={2} alignItems="center" mb={2}>
+                      <Avatar sx={{ bgcolor: brand.success, width: 56, height: 56 }}>
+                        {doc.name?.charAt(3) || "D"}
+                      </Avatar>
+                      <Box>
+                        <Typography fontWeight={600}>{doc.name}</Typography>
+                        <Chip label={doc.specialization} size="small" sx={{ mt: 0.5 }} />
+                      </Box>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {doc.experience} years experience · {doc.availability}
+                    </Typography>
+                    <Button
+                      component={Link}
+                      to={`/Book-Appointment?doctorId=${doc._id || doc.id}&doctorName=${encodeURIComponent(doc.name)}&specialization=${encodeURIComponent(doc.specialization)}`}
+                      variant="contained"
+                      fullWidth
+                      sx={{ mt: 2, bgcolor: brand.primary }}
+                    >
+                      Book appointment
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </Container>
     </div>
   );
 }

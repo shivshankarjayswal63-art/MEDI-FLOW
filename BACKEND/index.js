@@ -1,7 +1,7 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config(); // Load environment variables
+const { connectDatabase } = require("./config/database");
 
 // Import Routes
 const userRoutes = require("./Routes/UserRoutes"); // User Management Routes
@@ -22,8 +22,10 @@ const vitalsRoutes = require("./Routes/VitalsRoutes");
 
 // Middleware
 const allowedOrigins = [
-  process.env.FRONTEND01
-];
+  process.env.FRONTEND01,
+  "http://localhost:5173",
+  "http://localhost:5174",
+].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -62,18 +64,16 @@ app.use("/api/vitals", vitalsRoutes);
 //Medical Report Routes
 const medicalReportRoutes = require("./Routes/medicalReportRoutes");
 app.use("/api/reports", medicalReportRoutes);
+app.use("/api/dashboard", require("./Routes/DashboardRoutes"));
+app.use("/api/notifications", require("./Routes/NotificationRoutes"));
+app.use("/api/search", require("./Routes/SearchRoutes"));
 
 const path = require("path");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
-// Database Connection
-mongoose
-  .connect(process.env.MONGO_URI)
+connectDatabase()
   .then(() => {
-    console.log("Connected to MongoDB");
-    console.log("Database URL:", process.env.MONGO_URI);
-    // Only start server locally, not on Vercel
     if (process.env.NODE_ENV !== "production") {
       const PORT = process.env.PORT || 5000;
       app.listen(PORT, () => {

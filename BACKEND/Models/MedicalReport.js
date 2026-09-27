@@ -8,4 +8,8 @@ const medicalReportSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("MedicalReport", medicalReportSchema);
+const { useSupabase, createModel } = require("../lib/supabaseModel");
+
+module.exports = useSupabase()
+  ? createModel("medical_reports")
+  : mongoose.model("MedicalReport", medicalReportSchema);

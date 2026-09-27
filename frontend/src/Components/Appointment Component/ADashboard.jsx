@@ -67,6 +67,7 @@ const ADashboard = () => {
     completed: 0,
     rejected: 0,
     todayCount: 0,
+    estimatedWaitMinutes: 0,
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
@@ -112,6 +113,7 @@ const ADashboard = () => {
         completed,
         rejected,
         todayCount: todayAppointments.length,
+        estimatedWaitMinutes: pending * 12,
       });
 
       // Get upcoming appointments (next 5 days)
