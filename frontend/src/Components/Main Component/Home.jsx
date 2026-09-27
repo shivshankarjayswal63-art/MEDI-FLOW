@@ -53,33 +53,44 @@ function Home() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white w-full max-w-[100vw] overflow-x-hidden">
       <Nav />
       
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-[#f8f9ff] to-[#f0f8ff]">
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#f8f9ff] to-[#f0f8ff] w-full">
         {/* Decorative Elements */}
-        <div className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-[#e6317d]/10 blur-3xl"></div>
-        <div className="absolute top-40 -left-20 w-[40rem] h-[40rem] rounded-full bg-[#2FB297]/10 blur-3xl"></div>
+        <div className="absolute -top-20 -right-20 w-48 sm:w-96 h-48 sm:h-96 rounded-full bg-[#e6317d]/10 blur-3xl pointer-events-none"></div>
+        <div className="absolute top-40 -left-20 w-[20rem] sm:w-[40rem] h-[20rem] sm:h-[40rem] rounded-full bg-[#2FB297]/10 blur-3xl pointer-events-none"></div>
         
-        <Container maxWidth="lg" className="py-24 relative z-10">
-          <Grid container spacing={8} alignItems="center">
+        <Container maxWidth="lg" className="py-10 sm:py-16 md:py-24 relative z-10 !px-4 sm:!px-6">
+          <Grid container spacing={{ xs: 4, md: 8 }} alignItems="center">
             <Grid item xs={12} md={6}>
-              <Box className="p-4">
+              <Box className="p-0 sm:p-4 max-w-full">
                 <Chip 
                   label="NEXT-GEN HEALTHCARE" 
-                  className="!bg-[#e6317d]/10 !text-[#e6317d] !font-semibold !mb-6 !px-3 !py-3"
+                  size="small"
+                  className="!bg-[#e6317d]/10 !text-[#e6317d] !font-semibold !mb-4 sm:!mb-6 !px-2 sm:!px-3"
                 />
-                <Typography variant="h1" className="text-[#2b2c6c] font-bold text-5xl md:text-6xl mb-4 leading-tight">
-                  Healthcare <br />
-                  <span className="text-[#e6317d] relative">
+                <Typography
+                  component="h1"
+                  sx={{
+                    color: "#2b2c6c",
+                    fontWeight: 700,
+                    mb: 2,
+                    lineHeight: 1.15,
+                    wordBreak: "break-word",
+                    fontSize: { xs: "1.75rem", sm: "2.25rem", md: "3rem", lg: "3.75rem" },
+                  }}
+                >
+                  Healthcare{" "}
+                  <span className="text-[#e6317d] relative inline-block">
                     Reimagined
-                    <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="absolute -bottom-1 left-0 w-full max-w-full" viewBox="0 0 200 8" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
                       <path d="M0,5 Q50,0 100,5 T200,5" fill="none" stroke="#e6317d" strokeWidth="2"/>
                     </svg>
                   </span>
                 </Typography>
-                <Typography variant="body1" className="text-[#71717d] mb-8 max-w-md text-lg">
+                <Typography variant="body1" className="text-[#71717d] mb-6 sm:mb-8 max-w-md text-base sm:text-lg">
                   Experience healthcare that combines cutting-edge AI technology with compassionate care, perfectly tailored to your needs.
                 </Typography>
                 
