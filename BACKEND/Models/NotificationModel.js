@@ -8,8 +8,9 @@ const notificationSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-const { useSupabase, createModel } = require("../lib/supabaseModel");
+const { lazyModel } = require("../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("notifications")
-  : mongoose.model("Notification", notificationSchema);
+module.exports = lazyModel("notifications", () =>
+  mongoose.models.Notification ||
+  mongoose.model("Notification", notificationSchema)
+);

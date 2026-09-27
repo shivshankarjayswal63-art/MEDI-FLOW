@@ -58,8 +58,9 @@ const appointmentSchema = new mongoose.Schema({
   },
 });
 
-const { useSupabase, createModel } = require("../lib/supabaseModel");
+const { lazyModel } = require("../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("appointments")
-  : mongoose.model("Appointment", appointmentSchema);
+module.exports = lazyModel("appointments", () =>
+  mongoose.models.Appointment ||
+  mongoose.model("Appointment", appointmentSchema)
+);

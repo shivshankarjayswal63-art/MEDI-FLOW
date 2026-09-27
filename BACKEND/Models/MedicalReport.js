@@ -8,8 +8,9 @@ const medicalReportSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now },
 });
 
-const { useSupabase, createModel } = require("../lib/supabaseModel");
+const { lazyModel } = require("../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("medical_reports")
-  : mongoose.model("MedicalReport", medicalReportSchema);
+module.exports = lazyModel("medical_reports", () =>
+  mongoose.models.MedicalReport ||
+  mongoose.model("MedicalReport", medicalReportSchema)
+);

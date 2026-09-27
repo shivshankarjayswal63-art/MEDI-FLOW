@@ -14,8 +14,8 @@ const analysisSchema = new mongoose.Schema({
   },
 });
 
-const { useSupabase, createModel } = require("../lib/supabaseModel");
+const { lazyModel } = require("../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("analyses")
-  : mongoose.model("Analysis", analysisSchema);
+module.exports = lazyModel("analyses", () =>
+  mongoose.models.Analysis || mongoose.model("Analysis", analysisSchema)
+);

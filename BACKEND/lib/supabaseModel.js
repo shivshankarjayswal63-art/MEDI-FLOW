@@ -307,4 +307,32 @@ async function execFindById(table, id, state) {
   return new Document(table, populated[0]);
 }
 
-module.exports = { createModel, useSupabase, fromDb, toDb };
+/** Resolve Supabase vs Mongoose at call time (Vercel loads env before first request). */
+function lazyModel(table, mongooseFactory) {
+  let model = null;
+  const get = () => {
+    if (!model) {
+      model = useSupabase() ? createModel(table) : mongooseFactory();
+    }
+    return model;
+  };
+  const handler = {
+    get(_target, prop) {
+      const m = get();
+      const value = m[prop];
+      return typeof value === "function" ? value.bind(m) : value;
+    },
+    apply(_target, _thisArg, args) {
+      const M = get();
+      return new M(...args);
+    },
+    construct(_target, args) {
+      const M = get();
+      return new M(...args);
+    },
+  };
+  const proxy = new Proxy(function ProxyModel() {}, handler);
+  return proxy;
+}
+
+module.exports = { createModel, useSupabase, fromDb, toDb, lazyModel };

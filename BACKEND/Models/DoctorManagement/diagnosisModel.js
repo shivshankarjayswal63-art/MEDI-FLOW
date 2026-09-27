@@ -40,8 +40,8 @@ const diagnosisSchema = new Schema(
   { timestamps: true }
 );
 
-const { useSupabase, createModel } = require("../../lib/supabaseModel");
+const { lazyModel } = require("../../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("diagnoses")
-  : mongoose.model("Diagnosis", diagnosisSchema);
+module.exports = lazyModel("diagnoses", () =>
+  mongoose.models.Diagnosis || mongoose.model("Diagnosis", diagnosisSchema)
+);

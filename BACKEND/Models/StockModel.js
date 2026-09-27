@@ -57,8 +57,8 @@ const stockSchema=new Schema({
 },
     {timestamps:true});
     
-const { useSupabase, createModel } = require("../lib/supabaseModel");
+const { lazyModel } = require("../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("stock")
-  : mongoose.model("Stock", stockSchema);
+module.exports = lazyModel("stock", () =>
+  mongoose.models.Stock || mongoose.model("Stock", stockSchema)
+);

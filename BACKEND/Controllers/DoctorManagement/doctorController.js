@@ -37,7 +37,12 @@ const getAllDoctors = async (req, res) => {
       : [];
     res.status(200).json(list);
   } catch (err) {
-    res.status(500).json({ message: "Server Error" });
+    console.error("getAllDoctors:", err.message);
+    const hint =
+      !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? "Backend missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in Vercel env."
+        : undefined;
+    res.status(500).json({ message: "Server Error", hint, detail: err.message });
   }
 };
 

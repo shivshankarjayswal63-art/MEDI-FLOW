@@ -35,8 +35,9 @@ const doctorLeaveSchema = new Schema(
   { timestamps: true }
 );
 
-const { useSupabase, createModel } = require("../../lib/supabaseModel");
+const { lazyModel } = require("../../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("doctor_leaves")
-  : mongoose.model("DoctorLeave", doctorLeaveSchema);
+module.exports = lazyModel("doctor_leaves", () =>
+  mongoose.models.DoctorLeave ||
+  mongoose.model("DoctorLeave", doctorLeaveSchema)
+);

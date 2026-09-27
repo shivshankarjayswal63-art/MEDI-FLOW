@@ -69,8 +69,9 @@ const rejectedAppointmentSchema = new mongoose.Schema({
   },
 });
 
-const { useSupabase, createModel } = require("../lib/supabaseModel");
+const { lazyModel } = require("../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("rejected_appointments")
-  : mongoose.model("RejectedAppointment", rejectedAppointmentSchema);
+module.exports = lazyModel("rejected_appointments", () =>
+  mongoose.models.RejectedAppointment ||
+  mongoose.model("RejectedAppointment", rejectedAppointmentSchema)
+);

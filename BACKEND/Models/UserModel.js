@@ -93,8 +93,8 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-const { useSupabase, createModel } = require("../lib/supabaseModel");
+const { lazyModel } = require("../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("users")
-  : mongoose.model("User", userSchema);
+module.exports = lazyModel("users", () =>
+  mongoose.models.User || mongoose.model("User", userSchema)
+);

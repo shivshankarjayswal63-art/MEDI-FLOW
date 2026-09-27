@@ -15,8 +15,8 @@ const vitalsSchema = new mongoose.Schema({
   },
 });
 
-const { useSupabase, createModel } = require("../lib/supabaseModel");
+const { lazyModel } = require("../lib/supabaseModel");
 
-module.exports = useSupabase()
-  ? createModel("vitals")
-  : mongoose.model("Vitals", vitalsSchema);
+module.exports = lazyModel("vitals", () =>
+  mongoose.models.Vitals || mongoose.model("Vitals", vitalsSchema)
+);

@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config(); // Load environment variables
 const { connectDatabase } = require("./config/database");
+const { useSupabase } = require("./config/supabase");
 
 // Import Routes
 const userRoutes = require("./Routes/UserRoutes"); // User Management Routes
@@ -44,6 +45,34 @@ app.use(cors({
   credentials: true // if you use cookies/auth
 }));
 app.use(express.json());
+
+app.get("/", (_req, res) => {
+  res.json({
+    service: "MEDI-FLOW API",
+    health: "/api/health",
+    doctors: "/api/doctor/public",
+  });
+});
+
+app.get("/api/health", async (_req, res) => {
+  const missing = [];
+  if (!process.env.SUPABASE_URL) missing.push("SUPABASE_URL");
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!process.env.JWT_SECRET) missing.push("JWT_SECRET");
+  if (missing.length) {
+    return res.status(503).json({
+      ok: false,
+      message: "Set missing environment variables on Vercel (medi-flow-api project).",
+      missing,
+    });
+  }
+  try {
+    await connectDatabase();
+    res.json({ ok: true, database: useSupabase() ? "supabase" : "mongodb" });
+  } catch (err) {
+    res.status(503).json({ ok: false, message: err.message });
+  }
+});
 
 // API Routes
 app.use("/api/auth", authRoutes); // Routes for Login/Register

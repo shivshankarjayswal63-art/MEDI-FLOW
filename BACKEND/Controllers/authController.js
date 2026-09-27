@@ -96,8 +96,16 @@ const loginUser = async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server Error" });
+    console.error("loginUser:", err.message);
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json({
+        message: "Server misconfigured: JWT_SECRET is not set on the API host.",
+      });
+    }
+    res.status(500).json({
+      message: "Server Error",
+      detail: process.env.VERCEL ? err.message : undefined,
+    });
   }
 };
 
