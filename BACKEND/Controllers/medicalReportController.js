@@ -2,17 +2,32 @@ const MedicalReport = require("../Models/MedicalReport");
 const fs = require("fs");
 const path = require("path");
 const { buildDemoPdf } = require("../lib/demoPdf");
+const { analyzeReport } = require("../lib/reportInsights");
 
 exports.uploadReport = async (req, res) => {
   try {
+    const patientNotes = req.body?.patientNotes || req.body?.notes || "";
+    const insight = analyzeReport({
+      fileName: req.file.originalname,
+      filePath: req.file.path,
+      patientNotes,
+    });
+
     const newReport = new MedicalReport({
       userId: req.user.id,
       fileName: req.file.originalname,
       filePath: req.file.path,
       fileType: req.file.mimetype,
+      reportSummary: insight.reportSummary,
+      aiTags: insight.aiTags,
+      patientNotes: patientNotes || null,
     });
     await newReport.save();
-    res.status(201).json(newReport);
+    res.status(201).json({
+      ...newReport,
+      specialties: insight.specialties,
+      reportSummary: insight.reportSummary,
+    });
   } catch (err) {
     res.status(500).json({ message: "Upload failed", error: err.message });
   }

@@ -20,17 +20,26 @@ async function getPatientHealthContext(userId) {
 
   const supabase = getSupabase();
 
-  const [userRow, vitals, analyses, prescriptions, appointments] = await Promise.all([
+  const [userRow, vitals, analyses, prescriptions, appointments, reports] = await Promise.all([
     supabase
       .from("users")
-      .select("name, email, blood_group, city, gender, mobile")
+      .select("name, email, blood_group, city, gender, mobile, allergies, chronic_conditions, health_notes")
       .eq("id", userId)
       .maybeSingle()
-      .then((r) => (r.error ? null : r.data)),
+      .then(async (r) => {
+        if (!r.error) return r.data;
+        const fallback = await supabase
+          .from("users")
+          .select("name, email, blood_group, city, gender, mobile")
+          .eq("id", userId)
+          .maybeSingle();
+        return fallback.error ? null : fallback.data;
+      }),
     safeList(supabase, "vitals", "user_id", userId, "created_at", 5),
     safeList(supabase, "analyses", "user_id", userId, "created_at", 5),
     safeList(supabase, "prescriptions", "patient_id", userId, "date_issued", 5),
     safeList(supabase, "appointments", "user_id", userId, "date", 5),
+    safeList(supabase, "medical_reports", "user_id", userId, "uploaded_at", 10),
   ]);
 
   const latestVitals = vitals[0]
@@ -61,6 +70,23 @@ async function getPatientHealthContext(userId) {
     (a) => a.status !== "Completed" && new Date(a.date).getTime() >= Date.now() - 86400000
   );
 
+  const { inferFromText } = require("./reportInsights");
+  const medicalReports = reports.map((r) => {
+    const fileName = r.file_name || r.fileName;
+    const summary = r.report_summary || r.reportSummary;
+    const tags = r.ai_tags || r.aiTags || [];
+    const notes = r.patient_notes || r.patientNotes;
+    const { specialties } = inferFromText(`${fileName} ${summary || ""} ${(tags || []).join(" ")} ${notes || ""}`);
+    return {
+      fileName,
+      reportSummary: summary,
+      aiTags: tags,
+      patientNotes: notes,
+      uploadedAt: r.uploaded_at || r.uploadedAt,
+      specialties,
+    };
+  });
+
   return {
     profile: userRow
       ? {
@@ -68,6 +94,10 @@ async function getPatientHealthContext(userId) {
           bloodGroup: userRow.blood_group,
           city: userRow.city,
           gender: userRow.gender,
+          mobile: userRow.mobile,
+          allergies: userRow.allergies,
+          chronicConditions: userRow.chronic_conditions,
+          healthNotes: userRow.health_notes,
         }
       : {},
     latestVitals,
@@ -75,6 +105,7 @@ async function getPatientHealthContext(userId) {
     prescriptions: meds,
     upcomingAppointments: upcoming.slice(0, 3),
     recentAppointments: appts.slice(0, 3),
+    medicalReports,
   };
 }
 
@@ -118,6 +149,19 @@ function buildHealthSummaryReply(ctx) {
       .map((a) => `• ${a.doctor} (${a.specialization}) — ${a.date} ${a.time} [${a.status}]`)
       .join("\n");
     parts.push(`**Upcoming appointments:**\n${lines}`);
+  }
+  if (ctx.profile?.chronicConditions) {
+    parts.push(`**Chronic conditions:** ${ctx.profile.chronicConditions}`);
+  }
+  if (ctx.profile?.allergies) {
+    parts.push(`**Allergies:** ${ctx.profile.allergies}`);
+  }
+  if (ctx.medicalReports?.length) {
+    const lines = ctx.medicalReports
+      .slice(0, 5)
+      .map((r) => `• ${r.fileName}${r.reportSummary ? ` — ${String(r.reportSummary).replace(/\*\*/g, "")}` : ""}`)
+      .join("\n");
+    parts.push(`**Uploaded reports:**\n${lines}`);
   }
   if (parts.length <= 1) {
     parts.push("No detailed records found yet. Log vitals or use Symptom AI to build your history.");

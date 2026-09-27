@@ -15,6 +15,7 @@ import {
   Divider,
   useTheme,
   Fade,
+  TextField,
 } from "@mui/material";
 import {
   CloudUpload as UploadIcon,
@@ -29,6 +30,7 @@ import Swal from "sweetalert2";
 
 function ReportUploadDialog({ onClose, onSuccess }) {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [patientNotes, setPatientNotes] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
@@ -108,6 +110,9 @@ function ReportUploadDialog({ onClose, onSuccess }) {
 
     const formData = new FormData();
     formData.append("report", selectedFile);
+    if (patientNotes.trim()) {
+      formData.append("patientNotes", patientNotes.trim());
+    }
 
     try {
       setUploading(true);
@@ -132,7 +137,7 @@ function ReportUploadDialog({ onClose, onSuccess }) {
         Swal.fire({
           icon: "success",
           title: "Report Uploaded",
-          text: "Your medical report has been successfully uploaded.",
+          text: "Your report was uploaded. The assistant will use it for personalized doctor recommendations.",
           confirmButtonColor: "#2fb297",
         });
         onSuccess();
@@ -352,9 +357,20 @@ function ReportUploadDialog({ onClose, onSuccess }) {
               </Paper>
             )}
             
+            <TextField
+              fullWidth
+              multiline
+              minRows={2}
+              label="What is this report about? (helps AI matching)"
+              value={patientNotes}
+              onChange={(e) => setPatientNotes(e.target.value)}
+              placeholder="e.g. Chest pain follow-up, lipid panel, skin allergy test"
+              sx={{ mt: 2 }}
+              disabled={uploading}
+            />
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                <strong>Note:</strong> Upload your medical test results, scans, or any other health-related documents. These will be securely stored and accessible only to you and healthcare providers you authorize.
+                PDF or images up to 10MB. The medical assistant uses your reports with your profile to recommend doctors.
               </Typography>
             </Box>
           </>

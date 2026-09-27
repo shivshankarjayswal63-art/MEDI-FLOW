@@ -584,6 +584,42 @@ function UpdatePatientProfile({ user, onClose, onUpdate }) {
                     </TextField>
                   </Grid>
 
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      multiline
+                      minRows={2}
+                      label="Chronic conditions (optional)"
+                      name="chronicConditions"
+                      value={formData.chronicConditions || ""}
+                      onChange={handleChange}
+                      placeholder="e.g. Type 2 diabetes, asthma"
+                      sx={inputStyles}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Allergies (optional)"
+                      name="allergies"
+                      value={formData.allergies || ""}
+                      onChange={handleChange}
+                      placeholder="e.g. Penicillin, peanuts"
+                      sx={inputStyles}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Other health notes (optional)"
+                      name="healthNotes"
+                      value={formData.healthNotes || ""}
+                      onChange={handleChange}
+                      placeholder="Past surgeries, family history, etc."
+                      sx={inputStyles}
+                    />
+                  </Grid>
+
                   {/* Action Buttons */}
                   <Grid item xs={12}>
                     <Box

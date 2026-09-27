@@ -60,11 +60,26 @@ const updateUser = async (req, res) => {
       city,
       gender,
       dateOfBirth,
+      allergies,
+      chronicConditions,
+      healthNotes,
     } = req.body;
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email, mobile, bloodGroup, country, city, gender, dateOfBirth },
+      {
+        name,
+        email,
+        mobile,
+        bloodGroup,
+        country,
+        city,
+        gender,
+        dateOfBirth,
+        allergies,
+        chronicConditions,
+        healthNotes,
+      },
       { new: true, runValidators: true } // Ensure validation is applied
     ).select("-password");
 

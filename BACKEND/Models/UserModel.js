@@ -65,6 +65,9 @@ const userSchema = new Schema({
     enum: ["patient", "user_admin", "pharmacy_admin", "appointment_admin"],
     default: "patient",
   },
+  allergies: { type: String, trim: true, default: null },
+  chronicConditions: { type: String, trim: true, default: null },
+  healthNotes: { type: String, trim: true, default: null },
 });
 
 // Enforce required fields **ONLY during Profile Update**

@@ -6,6 +6,9 @@ const medicalReportSchema = new mongoose.Schema({
   filePath: { type: String, required: true },
   fileType: { type: String },
   uploadedAt: { type: Date, default: Date.now },
+  reportSummary: { type: String },
+  aiTags: { type: [String], default: [] },
+  patientNotes: { type: String },
 });
 
 const { lazyModel } = require("../lib/supabaseModel");

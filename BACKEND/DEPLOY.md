@@ -100,6 +100,8 @@ Log in on the site at **/login** — you should land on **/User-Dashboard**.
 
 **Medical assistant chat history (optional):** run `supabase/migrations/003_medical_assistant_chat.sql` on Supabase so signed-in patients get server-side saved chats (`GET /api/medical-assistant/session`). Without it, chats still persist in the browser.
 
+**Patient health profile + report AI tags (optional):** run `supabase/migrations/004_patient_health_profile.sql` for allergies/chronic conditions on `users` and `report_summary` / `ai_tags` on `medical_reports`.
+
 ---
 
 ## Option B — Render (good for long-running Express)

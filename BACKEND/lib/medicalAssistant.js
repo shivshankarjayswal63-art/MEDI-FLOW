@@ -320,7 +320,7 @@ function buildSystemPrompt(context, patientContext) {
 Rules:
 - ONLY discuss medicine, symptoms, conditions, prevention, and wellness. Refuse non-medical topics briefly.
 - Use clear, simple English. Use conversation history — do not ask the user to repeat details they already gave.
-- When patientHealthRecord is provided, personalize using ONLY that data.
+- When patientHealthRecord is provided, personalize using ONLY that data (profile, vitals, uploaded lab reports, symptom history).
 - Appointments: ALWAYS book inside MEDI FLOW only. Never say you cannot book. Never tell users to call clinics or use external portals. Say: use the doctor/date/time chips in this chat.
 - Never say you are "not a doctor", "health educator", or add legal disclaimers.
 - Keep replies under about 200 words unless more detail is requested.
@@ -400,13 +400,14 @@ function baseResponse(extra) {
 }
 
 async function runBookingResponse(message, options) {
-  const { userId, patientContext, bookingState, selection } = options;
+  const { userId, patientContext, bookingState, selection, history } = options;
   const booking = await processBookingFlow({
     message,
     userId,
     patientContext,
     bookingState,
     selection,
+    history,
   });
   return baseResponse({
     reply: polishAssistantReply(booking.reply),
@@ -428,7 +429,7 @@ async function processMedicalChat(message, history, options = {}) {
   const flowOpts = { forceBooking, history };
 
   if (shouldRunBookingFlow(message, bookingState, selection, flowOpts)) {
-    return runBookingResponse(message, { userId, patientContext, bookingState, selection });
+    return runBookingResponse(message, { userId, patientContext, bookingState, selection, history });
   }
 
   if (isGreetingOnly(message)) {
@@ -490,7 +491,7 @@ async function processMedicalChat(message, history, options = {}) {
     llmRefusedBooking(reply) ||
     (detectBookingIntent(message) && /\b(appointment|book|schedule)\b/i.test(message))
   ) {
-    return runBookingResponse(message, { userId, patientContext, bookingState, selection });
+    return runBookingResponse(message, { userId, patientContext, bookingState, selection, history });
   } else if (analysis?.urgent && !reply.toLowerCase().includes("emergency")) {
     reply +=
       "\n\n⚠️ Screening suggests urgent symptoms — seek emergency care if severe or worsening.";

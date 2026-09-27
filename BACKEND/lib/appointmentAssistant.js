@@ -9,7 +9,7 @@ const BOOKING_STEPS = ["choose_doctor", "choose_date", "choose_time", "choose_vi
 
 function detectBookingIntent(message) {
   const t = message.toLowerCase();
-  if (/\b(book( an?)?\s+appointment|schedule\s+(an?\s+)?appointment|make\s+(an?\s+)?appointment|book\s+(for\s+)?me|reschedule|available doctor|which doctor|pick a doctor|open slot)\b/.test(t)) {
+  if (/\b(book( an?)?\s+appointment|schedule\s+(an?\s+)?appointment|make\s+(an?\s+)?appointment|book\s+(for\s+)?me|reschedule|available doctor|which doctor|pick a doctor|open slot|recommend (a )?doctor|best doctor|suggest (a )?doctor)\b/.test(t)) {
     return true;
   }
   if (/\b(book|schedule|appointment)\b/.test(t) && !/\b(when to|should i|how to|why|what)\s+(visit|see)\b/.test(t)) {
@@ -67,19 +67,7 @@ function matchSpecialization(message) {
   return null;
 }
 
-function rankDoctorsForNeed(message, doctors) {
-  const spec = matchSpecialization(message);
-  const scored = doctors.map((d) => {
-    let score = 0;
-    const sp = String(d.specialization || "").toLowerCase();
-    if (spec && sp.includes(spec.slice(0, 5))) score += 10;
-    if (spec === "general" && /general|family|medicine/i.test(sp)) score += 8;
-    return { doctor: d, score };
-  });
-  scored.sort((a, b) => b.score - a.score);
-  const top = scored.filter((s) => s.score > 0).map((s) => s.doctor);
-  return top.length ? top : doctors;
-}
+const { rankDoctorsForPatient, buildPersonalizedIntro } = require("./doctorRecommendation");
 
 async function listDoctorsForChat() {
   const now = Date.now();
@@ -237,8 +225,14 @@ function patientDisplayName(patientContext) {
   return patientContext?.profile?.name || patientContext?.name || "Patient";
 }
 
-async function buildDoctorListStep(message, doctors, patientContext) {
-  const ranked = rankDoctorsForNeed(message, doctors).slice(0, 5);
+async function buildDoctorListStep(message, doctors, patientContext, history = []) {
+  const { doctors: rankedList, rankedSpecs } = rankDoctorsForPatient(
+    message,
+    doctors,
+    patientContext,
+    history
+  );
+  const ranked = rankedList.slice(0, 5);
   const lines = [];
   for (const d of ranked) {
     const dates = await getAvailableDatesForDoctor(d.id, 14, 3);
@@ -246,13 +240,21 @@ async function buildDoctorListStep(message, doctors, patientContext) {
       dates.length > 0
         ? dates.map((x) => x.label).join(", ")
         : "checking schedule — pick doctor to see times";
-    lines.push(`• **${d.name}** — ${d.specialization}\n  Open: ${dayHint}`);
+    const matchTag =
+      rankedSpecs.length && String(d.specialization || "").toLowerCase().includes(rankedSpecs[0].slice(0, 5))
+        ? " ⭐ Best match"
+        : "";
+    lines.push(`• **${d.name}** — ${d.specialization}${matchTag}\n  Open: ${dayHint}`);
   }
 
-  const need = matchSpecialization(message);
-  const intro = need
-    ? `Based on what you need, I recommend these **MEDI FLOW** doctors (in our system only):`
-    : `I can book **only inside MEDI FLOW** — choose a doctor below. I'll use your profile for your name and contact details.`;
+  let intro =
+    patientContext?.profile?.name || patientContext?.medicalReports?.length
+      ? buildPersonalizedIntro(patientContext, rankedSpecs, [])
+      : `I can book **only inside MEDI FLOW** — choose a doctor below. I'll use your profile for your name and contact details.`;
+
+  if (!patientContext?.medicalReports?.length) {
+    intro += "\n\n💡 Upload past lab reports under **My profile** or **Lab results** for smarter doctor matching.";
+  }
 
   const reply = `${intro}\n\n${lines.join("\n\n")}\n\n**Step 1:** Tap a doctor, or type their name.`;
 
@@ -401,7 +403,7 @@ function buildConfirmStep(state, patientContext, userId) {
 /**
  * Multi-step in-app booking (never external portals).
  */
-async function processBookingFlow({ message, userId, patientContext, bookingState, selection }) {
+async function processBookingFlow({ message, userId, patientContext, bookingState, selection, history = [] }) {
   if (/\b(cancel|stop booking|never mind)\b/i.test(message) && !selection?.kind) {
     return {
       reply: "Booking cancelled. Ask any health question or say **book appointment** when you're ready.",
@@ -426,21 +428,21 @@ async function processBookingFlow({ message, userId, patientContext, bookingStat
   if (selection?.kind === "doctor" && selection.doctorId) {
     const doctor = findDoctorById(doctors, selection.doctorId);
     if (!doctor) {
-      return buildDoctorListStep(message, doctors, patientContext);
+      return buildDoctorListStep(message, doctors, patientContext, history);
     }
     return buildDateStep(doctor, patientContext);
   }
 
   if (selection?.kind === "date" && selection.date && (selection.doctorId || state?.doctorId)) {
     const doctor = findDoctorById(doctors, selection.doctorId || state.doctorId);
-    if (!doctor) return buildDoctorListStep(message, doctors, patientContext);
+    if (!doctor) return buildDoctorListStep(message, doctors, patientContext, history);
     return buildTimeStep(doctor, selection.date, patientContext);
   }
 
   if (selection?.kind === "time" && selection.time) {
     const doctor = findDoctorById(doctors, selection.doctorId || state?.doctorId);
     const dateIso = selection.date || state?.date;
-    if (!doctor || !dateIso) return buildDoctorListStep(message, doctors, patientContext);
+    if (!doctor || !dateIso) return buildDoctorListStep(message, doctors, patientContext, history);
     const nextState = {
       step: "choose_visit_mode",
       doctorId: doctor.id,
@@ -455,7 +457,7 @@ async function processBookingFlow({ message, userId, patientContext, bookingStat
   if (selection?.kind === "visit_mode" && selection.visitMode) {
     const doctor = findDoctorById(doctors, selection.doctorId || state?.doctorId);
     if (!doctor || !state?.date || !state?.time) {
-      return buildDoctorListStep(message, doctors, patientContext);
+      return buildDoctorListStep(message, doctors, patientContext, history);
     }
     const nextState = {
       ...state,
@@ -495,7 +497,7 @@ async function processBookingFlow({ message, userId, patientContext, bookingStat
       return buildDateStep(picked, patientContext);
     }
     if (!state || detectBookingIntent(message)) {
-      return buildDoctorListStep(message, doctors, patientContext);
+      return buildDoctorListStep(message, doctors, patientContext, history);
     }
   }
 
@@ -545,17 +547,18 @@ async function processBookingFlow({ message, userId, patientContext, bookingStat
     return buildConfirmStep(state, patientContext, userId);
   }
 
-  return buildDoctorListStep(message, doctors, patientContext);
+  return buildDoctorListStep(message, doctors, patientContext, history);
 }
 
 /** @deprecated use processBookingFlow */
-async function handleBookingRequest(message, userId, patientContext) {
+async function handleBookingRequest(message, userId, patientContext, history = []) {
   const result = await processBookingFlow({
     message,
     userId,
     patientContext,
     bookingState: null,
     selection: null,
+    history,
   });
   return result;
 }
