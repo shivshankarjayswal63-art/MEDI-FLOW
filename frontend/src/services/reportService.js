@@ -61,16 +61,73 @@ export const uploadMedicalReport = async (formData) => {
       throw new Error(`File is too large. Use a PDF or image under ${mb} MB.`);
     }
 
-    // Use multipart upload to avoid base64/JSON size limits
-    const res = await axios.post(`${reportsBase()}/upload`, formData, {
-      headers: {
-        ...authHeaders(),
-        // multipart boundary will be set by the browser/axios
-      },
-      maxBodyLength: 50 * 1024 * 1024,
-      maxContentLength: 50 * 1024 * 1024,
-    });
-    return res.data;
+    // Choose upload strategy:
+    // - On Vercel same-origin (no external API base) prefer JSON/base64 (`/upload-base64`).
+    // - Otherwise use multipart `/upload`. If multipart fails, fallback to base64 when file size permits.
+    const base = apiUrl("");
+    const useBase64ByDefault = !base; // empty base => same-origin (Vercel)
+
+    if (useBase64ByDefault) {
+      const patientNotes = formData.get("patientNotes") || formData.get("notes") || "";
+      const fileBase64 = await fileToBase64(file);
+      const res = await axios.post(
+        `${reportsBase()}/upload-base64`,
+        {
+          fileName: file.name,
+          fileType: file.type || "application/pdf",
+          fileBase64,
+          patientNotes: String(patientNotes || "").trim(),
+        },
+        {
+          headers: {
+            ...authHeaders(),
+            "Content-Type": "application/json",
+          },
+          maxBodyLength: 14 * 1024 * 1024,
+          maxContentLength: 14 * 1024 * 1024,
+        }
+      );
+      return res.data;
+    }
+
+    // Try multipart upload first
+    try {
+      const res = await axios.post(`${reportsBase()}/upload`, formData, {
+        headers: {
+          ...authHeaders(),
+        },
+        maxBodyLength: 50 * 1024 * 1024,
+        maxContentLength: 50 * 1024 * 1024,
+      });
+      return res.data;
+    } catch (err) {
+      // If multipart failed and file is within base64 limit, try base64 fallback
+      const fallbackMax = getMaxReportUploadBytes();
+      if (file.size <= fallbackMax) {
+        try {
+          const patientNotes = formData.get("patientNotes") || formData.get("notes") || "";
+          const fileBase64 = await fileToBase64(file);
+          const res2 = await axios.post(
+            `${reportsBase()}/upload-base64`,
+            {
+              fileName: file.name,
+              fileType: file.type || "application/pdf",
+              fileBase64,
+              patientNotes: String(patientNotes || "").trim(),
+            },
+            {
+              headers: { ...authHeaders(), "Content-Type": "application/json" },
+              maxBodyLength: 14 * 1024 * 1024,
+              maxContentLength: 14 * 1024 * 1024,
+            }
+          );
+          return res2.data;
+        } catch (err2) {
+          throw err2;
+        }
+      }
+      throw err;
+    }
   } catch (err) {
     wrapReportError(err, "Upload failed. Use PDF/JPEG/PNG under 10MB.");
   }

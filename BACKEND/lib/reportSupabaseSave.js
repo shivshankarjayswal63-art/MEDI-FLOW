@@ -78,13 +78,17 @@ async function saveReportViaSupabase(fields) {
             upsert: false,
           });
           if (up.error) {
-            console.warn("supabase storage upload error:", up.error.message);
+            console.warn("supabase storage upload error:", up.error.message, up.error);
+            // Surface the storage error to caller via thrown error so frontend can see it
+            throw new Error(up.error.message || "Supabase storage upload failed");
           } else {
             // Save logical storage path in file_path so download logic can detect it
             row.file_path = `storage://${bucket}/${objectPath}`;
           }
         } catch (e) {
-          console.warn("supabase storage upload threw:", e?.message || e);
+          console.error("supabase storage upload threw:", e?.message || e);
+          // rethrow to let outer handler decide — this will be logged by controller
+          throw e;
         }
       }
     } catch (e) {
