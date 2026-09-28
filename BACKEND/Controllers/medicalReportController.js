@@ -106,6 +106,7 @@ async function handleReportUpload(req, res) {
       aiTags: insight.aiTags || [],
       patientNotes: patientNotes || null,
       fileContentBase64,
+      fileBuffer: fileBuffer,
     };
 
     const newReport = useSupabase()
@@ -225,6 +226,36 @@ exports.downloadReport = async (req, res) => {
           buf = Buffer.from(b64, "base64");
         } catch {
           buf = null;
+        }
+      }
+
+      // if still no buffer, attempt to download from Supabase storage when file_path uses storage://
+      if ((!buf || !buf.length) && (report.filePath || report.file_path)) {
+        const relPath = String(report.filePath || report.file_path || "");
+        if (relPath.startsWith("storage://")) {
+          try {
+            const supabase = getSupabase();
+            const parts = relPath.replace(/^storage:\/\//, "").split("/");
+            const bucket = parts.shift();
+            const objectPath = parts.join("/");
+            const { data, error } = await supabase.storage.from(bucket).download(objectPath);
+            if (!error && data) {
+              if (typeof data.arrayBuffer === "function") {
+                const ab = await data.arrayBuffer();
+                buf = Buffer.from(ab);
+              } else if (Buffer.isBuffer(data)) {
+                buf = data;
+              } else if (data && typeof data.pipe === "function") {
+                const chunks = [];
+                for await (const chunk of data) chunks.push(Buffer.from(chunk));
+                buf = Buffer.concat(chunks);
+              }
+            } else {
+              console.warn("storage download error:", error?.message || error);
+            }
+          } catch (e) {
+            console.warn("failed to download from storage:", e?.message || e);
+          }
         }
       }
     }

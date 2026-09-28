@@ -23,7 +23,11 @@ async function saveReportViaSupabase(fields) {
     aiTags,
     patientNotes,
     fileContentBase64,
+    fileBuffer,
   } = fields;
+
+  // choose bucket from env or default
+  const bucket = process.env.SUPABASE_REPORTS_BUCKET || "medical-reports";
 
   const attempts = [
     stripUndefined({
@@ -62,6 +66,31 @@ async function saveReportViaSupabase(fields) {
 
   let lastError;
   for (const row of attempts) {
+    // If we have a file buffer, try uploading to Supabase storage first.
+    try {
+      if (fileBuffer && fileBuffer.length) {
+        const ts = Date.now();
+        const safeName = String(fileName || "file").replace(/\s+/g, "_");
+        const objectPath = `reports/${userId}/${ts}-${safeName}`;
+        try {
+          const up = await supabase.storage.from(bucket).upload(objectPath, fileBuffer, {
+            contentType: fileType || "application/octet-stream",
+            upsert: false,
+          });
+          if (up.error) {
+            console.warn("supabase storage upload error:", up.error.message);
+          } else {
+            // Save logical storage path in file_path so download logic can detect it
+            row.file_path = `storage://${bucket}/${objectPath}`;
+          }
+        } catch (e) {
+          console.warn("supabase storage upload threw:", e?.message || e);
+        }
+      }
+    } catch (e) {
+      console.warn("report upload pre-insert hook failed:", e?.message || e);
+    }
+
     const { data, error } = await supabase.from("medical_reports").insert(row).select().single();
     if (!error && data) {
       return fromDb(data);
