@@ -1,8 +1,11 @@
 const { analyzeSymptoms, normalizeSymptom, CONDITION_PROFILES } = require("./symptomAnalyzer");
 const {
   detectHealthSummaryIntent,
+  detectReportSummaryIntent,
   buildHealthSummaryReply,
+  buildReportSummaryReply,
 } = require("./patientHealthContext");
+const { polishHealthSummaryReply } = require("./reportLlmSummary");
 const {
   shouldRunBookingFlow,
   processBookingFlow,
@@ -220,6 +223,13 @@ const MEDICAL_HINTS = [
   "appointment",
   "book",
   "schedule",
+  "summarize",
+  "summary",
+  "report",
+  "lab",
+  "upload",
+  "history",
+  "record",
 ];
 
 function isGreetingOnly(text) {
@@ -443,16 +453,27 @@ async function processMedicalChat(message, history, options = {}) {
     });
   }
 
-  if (isOffTopic(message)) {
+  if (detectHealthSummaryIntent(message)) {
+    const built = buildHealthSummaryReply(patientContext);
+    const reply = patientContext
+      ? (await polishHealthSummaryReply(built, patientContext)) || built
+      : built;
     return baseResponse({
-      reply: MEDICAL_ONLY_REFUSAL,
+      reply,
+      source: process.env.NVIDIA_API_KEY && patientContext ? "nemotron" : "rules",
+    });
+  }
+
+  if (detectReportSummaryIntent(message)) {
+    return baseResponse({
+      reply: buildReportSummaryReply(patientContext),
       source: "rules",
     });
   }
 
-  if (detectHealthSummaryIntent(message)) {
+  if (isOffTopic(message)) {
     return baseResponse({
-      reply: buildHealthSummaryReply(patientContext),
+      reply: MEDICAL_ONLY_REFUSAL,
       source: "rules",
     });
   }

@@ -1,6 +1,8 @@
 /** Contextual question suggestions for the medical assistant (client-side). */
 
 export const DEFAULT_PROMPTS = [
+  "Summarize my health history",
+  "Summarize my lab report",
   "What are stroke warning signs?",
   "I have chest pain and shortness of breath",
   "Difference between heartburn and a heart attack?",

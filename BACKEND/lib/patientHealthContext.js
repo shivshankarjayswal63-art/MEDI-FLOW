@@ -15,8 +15,124 @@ async function safeList(supabase, table, column, userId, orderBy, limit) {
 /**
  * Compact health summary for medical assistant (authenticated patient only).
  */
+function formatMedicineField(medicine) {
+  if (medicine == null || medicine === "") return "Medicines on file";
+  if (typeof medicine === "string") return medicine;
+  if (Array.isArray(medicine)) {
+    return medicine
+      .map((m) => {
+        if (typeof m === "string") return m;
+        const name = m.medicineName || m.name || m.medicine || "";
+        const dose = m.dosage || m.dose || "";
+        return `${name} ${dose}`.trim();
+      })
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof medicine === "object") {
+    try {
+      return JSON.stringify(medicine);
+    } catch {
+      return "Medicines on file";
+    }
+  }
+  return String(medicine);
+}
+
+async function getPatientHealthContextMongo(userId) {
+  const User = require("../Models/UserModel");
+  const Vitals = require("../Models/VitalsModel");
+  const Analysis = require("../Models/AnalysisModel");
+  const MedicalReport = require("../Models/MedicalReport");
+  const Appointment = require("../Models/AppoinmentModel");
+
+  const user = await User.findById(userId);
+  const vitalsRows = await Vitals.find({ userId });
+  const vitals = [...(vitalsRows || [])].sort(
+    (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  );
+  const analysesRows = await Analysis.find({ userId });
+  const analyses = [...(analysesRows || [])].sort(
+    (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+  );
+  const reportsRows = await MedicalReport.find({ userId });
+  const reports = [...(reportsRows || [])].sort(
+    (a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0)
+  );
+  const apptsRows = await Appointment.find({ user_id: userId });
+  const appointments = [...(apptsRows || [])].sort(
+    (a, b) => new Date(b.date || 0) - new Date(a.date || 0)
+  );
+
+  const latestVitals = vitals[0]
+    ? { bp: vitals[0].bp, pulse: vitals[0].pulse, sugar: vitals[0].sugar, at: vitals[0].createdAt }
+    : null;
+
+  const { inferFromText } = require("./reportInsights");
+  const medicalReports = reports.map((r) => {
+    const fileName = r.fileName || r.file_name;
+    const summary = r.reportSummary || r.report_summary;
+    const tags = r.aiTags || r.ai_tags || [];
+    const notes = r.patientNotes || r.patient_notes;
+    const { specialties } = inferFromText(`${fileName} ${summary || ""} ${(tags || []).join(" ")} ${notes || ""}`);
+    return {
+      fileName,
+      reportSummary: summary,
+      aiTags: tags,
+      patientNotes: notes,
+      uploadedAt: r.uploadedAt || r.uploaded_at,
+      specialties,
+    };
+  });
+
+  const appts = appointments.map((a) => ({
+    doctor: a.doctorName || a.doctor_name,
+    specialization: a.specialization,
+    date: a.date,
+    time: a.time,
+    status: a.status,
+  }));
+
+  const upcoming = appts.filter(
+    (a) => a.status !== "Completed" && new Date(a.date).getTime() >= Date.now() - 86400000
+  );
+
+  return {
+    profile: user
+      ? {
+          name: user.name,
+          bloodGroup: user.bloodGroup || user.blood_group,
+          city: user.city,
+          gender: user.gender,
+          mobile: user.mobile,
+          allergies: user.allergies,
+          chronicConditions: user.chronicConditions || user.chronic_conditions,
+          healthNotes: user.healthNotes || user.health_notes,
+        }
+      : {},
+    latestVitals,
+    recentAnalyses: analyses.slice(0, 5).map((a) => ({
+      prediction: a.prediction,
+      symptoms: a.symptoms,
+      at: a.createdAt,
+    })),
+    prescriptions: [],
+    upcomingAppointments: upcoming.slice(0, 3),
+    recentAppointments: appts.slice(0, 3),
+    medicalReports,
+  };
+}
+
 async function getPatientHealthContext(userId) {
-  if (!userId || !useSupabase()) return null;
+  if (!userId) return null;
+  if (!useSupabase()) {
+    try {
+      return await getPatientHealthContextMongo(userId);
+    } catch (err) {
+      console.warn("patientHealthContext mongo:", err.message);
+      return null;
+    }
+  }
 
   const supabase = getSupabase();
 
@@ -53,7 +169,7 @@ async function getPatientHealthContext(userId) {
   }));
 
   const meds = prescriptions.map((p) => ({
-    medicine: p.medicine,
+    medicine: formatMedicineField(p.medicine),
     notes: p.notes,
     issued: p.date_issued,
   }));
@@ -113,8 +229,50 @@ function detectHealthSummaryIntent(message) {
   const t = message.toLowerCase();
   return (
     /\b(my health|my history|health history|my records|summarize my|my diseases|my condition)\b/.test(t) ||
+    /\b(ai health summary|health summary|summarize my health)\b/.test(t) ||
     /\bwhat do you know about me\b/.test(t)
   );
+}
+
+function detectReportSummaryIntent(message) {
+  const t = message.toLowerCase();
+  return (
+    /\b(summarize|summary|explain|interpret|what does).*(report|lab|pdf|result)\b/.test(t) ||
+    /\b(my|uploaded) (lab |medical )?report\b/.test(t) ||
+    /\breport summary\b/.test(t)
+  );
+}
+
+function buildReportSummaryReply(ctx) {
+  if (!ctx) {
+    return "Sign in as a patient, then upload a lab report (PDF or image) using **Upload report** here or from **Lab reports** in the menu.";
+  }
+  const reports = ctx.medicalReports || [];
+  if (!reports.length) {
+    return "You have no uploaded reports yet. Use **Upload report** below or go to **Lab reports** to add a PDF — I will summarize it for you.";
+  }
+  const latest = reports[0];
+  const parts = [
+    `**Latest report:** ${latest.fileName}`,
+    latest.reportSummary
+      ? String(latest.reportSummary)
+      : "Summary is being processed — ask again in a moment.",
+  ];
+  if (latest.aiTags?.length) {
+    parts.push(`**Keywords:** ${latest.aiTags.slice(0, 8).join(", ")}`);
+  }
+  if (latest.specialties?.length) {
+    parts.push(`**Suggested follow-up areas:** ${latest.specialties.join(", ")}`);
+  }
+  if (reports.length > 1) {
+    const older = reports
+      .slice(1, 4)
+      .map((r) => `• ${r.fileName}`)
+      .join("\n");
+    parts.push(`**Other recent uploads:**\n${older}`);
+  }
+  parts.push("Ask **book appointment** if you want help choosing a specialist.");
+  return parts.join("\n\n");
 }
 
 function buildHealthSummaryReply(ctx) {
@@ -140,7 +298,7 @@ function buildHealthSummaryReply(ctx) {
   if (ctx.prescriptions?.length) {
     const lines = ctx.prescriptions
       .slice(0, 3)
-      .map((p) => `• ${p.medicine}${p.notes ? ` — ${p.notes}` : ""}`)
+      .map((p) => `• ${formatMedicineField(p.medicine)}${p.notes ? ` — ${p.notes}` : ""}`)
       .join("\n");
     parts.push(`**Prescriptions on file:**\n${lines}`);
   }
@@ -172,5 +330,7 @@ function buildHealthSummaryReply(ctx) {
 module.exports = {
   getPatientHealthContext,
   detectHealthSummaryIntent,
+  detectReportSummaryIntent,
   buildHealthSummaryReply,
+  buildReportSummaryReply,
 };

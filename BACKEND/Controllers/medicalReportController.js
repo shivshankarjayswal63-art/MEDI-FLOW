@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { buildDemoPdf } = require("../lib/demoPdf");
 const { analyzeReport } = require("../lib/reportInsights");
+const { summarizeReportWithAI } = require("../lib/reportLlmSummary");
 
 exports.uploadReport = async (req, res) => {
   try {
@@ -13,12 +14,19 @@ exports.uploadReport = async (req, res) => {
       patientNotes,
     });
 
+    const reportSummary = await summarizeReportWithAI({
+      fileName: req.file.originalname,
+      patientNotes,
+      extractedSnippet: insight.extractedSnippet,
+      ruleSummary: insight.reportSummary,
+    });
+
     const newReport = new MedicalReport({
       userId: req.user.id,
       fileName: req.file.originalname,
       filePath: req.file.path,
       fileType: req.file.mimetype,
-      reportSummary: insight.reportSummary,
+      reportSummary,
       aiTags: insight.aiTags,
       patientNotes: patientNotes || null,
     });
@@ -26,7 +34,8 @@ exports.uploadReport = async (req, res) => {
     res.status(201).json({
       ...newReport,
       specialties: insight.specialties,
-      reportSummary: insight.reportSummary,
+      reportSummary,
+      assistantSummary: reportSummary,
     });
   } catch (err) {
     res.status(500).json({ message: "Upload failed", error: err.message });

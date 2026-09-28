@@ -67,6 +67,7 @@ import { brand } from "../../theme/brand";
 import { pageTitleSx, pageSubtitleSx, pageContainerSx } from "../../theme/responsive";
 
 import EmptyState from "../EmptyState";
+import { fetchPatientHealthSummary } from "../../utils/medicalAssistantApi";
 
 
 
@@ -173,6 +174,9 @@ function PatientDashboard() {
   const [loadError, setLoadError] = useState("");
 
   const [data, setData] = useState(emptySummary);
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
+  const [aiSummaryError, setAiSummaryError] = useState("");
 
 
 
@@ -227,7 +231,19 @@ function PatientDashboard() {
 
   }, [navigate]);
 
-
+  const loadAiSummary = async () => {
+    setAiSummaryLoading(true);
+    setAiSummaryError("");
+    try {
+      const { reply } = await fetchPatientHealthSummary();
+      setAiSummary(reply || "");
+    } catch (err) {
+      setAiSummary("");
+      setAiSummaryError(err.message || "Could not generate summary.");
+    } finally {
+      setAiSummaryLoading(false);
+    }
+  };
 
   const {
 
@@ -712,6 +728,62 @@ function PatientDashboard() {
 
 
         <Grid item xs={12} md={5}>
+
+          <Card sx={{ borderRadius: 2, mb: { xs: 2, md: 3 }, bgcolor: brand.lightBg }}>
+
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+
+              <Typography fontWeight={600} sx={{ mb: 1 }}>AI health summary</Typography>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+
+                Vitals, symptom checks, lab reports, and appointments in one view.
+
+              </Typography>
+
+              <Button
+
+                variant="contained"
+
+                size="small"
+
+                disabled={aiSummaryLoading}
+
+                onClick={loadAiSummary}
+
+                sx={{ mb: 1.5, bgcolor: brand.success }}
+
+              >
+
+                {aiSummaryLoading ? "Generating…" : aiSummary ? "Refresh summary" : "Generate AI summary"}
+
+              </Button>
+
+              {aiSummaryError && (
+
+                <Alert severity="warning" sx={{ mb: 1 }}>{aiSummaryError}</Alert>
+
+              )}
+
+              {aiSummary && (
+
+                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+
+                  {aiSummary.replace(/\*\*/g, "")}
+
+                </Typography>
+
+              )}
+
+              <Button component={Link} to="/medical-assistant" size="small" sx={{ mt: 1 }}>
+
+                Open medical assistant
+
+              </Button>
+
+            </CardContent>
+
+          </Card>
 
           <Card sx={{ borderRadius: 2, mb: { xs: 2, md: 3 } }}>
 

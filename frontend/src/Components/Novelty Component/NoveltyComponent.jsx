@@ -1,7 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import HeartModelViewer from "./HeartModel/HeartModelViewer";
+import SymptomVoicePanel from "./SymptomVoicePanel";
+import { apiUrl } from "../../utils/apiBase";
+import {
+  startListening,
+  stopListening,
+  stopSpeaking,
+  speak,
+  playUiSound,
+  matchSymptomsFromSpeech,
+  isSpeechRecognitionSupported,
+  isSoundEnabled,
+  setSoundEnabled,
+} from "../../utils/speechAssist";
 
 const getRecommendationsForResult = (analysisResult) => {
   const id = analysisResult?.primaryId;
@@ -69,7 +82,13 @@ const NoveltyComponent = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [showAllSymptoms, setShowAllSymptoms] = useState(false);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceMessage, setVoiceMessage] = useState("");
+  const [voiceError, setVoiceError] = useState("");
+  const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const navigate = useNavigate();
+
+  const recognitionSupported = isSpeechRecognitionSupported();
 
   const symptomCategories = {
     "Chest & Heart": [
@@ -130,6 +149,67 @@ const NoveltyComponent = () => {
 
   const sectionNames = Object.keys(symptomCategories);
 
+  const allSymptomNames = Object.values(symptomCategories).flat().map((s) => s.name);
+
+  useEffect(() => {
+    return () => {
+      stopListening();
+      stopSpeaking();
+    };
+  }, []);
+
+  const toggleSound = () => {
+    setSoundOn((prev) => {
+      const next = !prev;
+      setSoundEnabled(next);
+      playUiSound("tap");
+      return next;
+    });
+  };
+
+  const handleMicClick = useCallback(() => {
+    if (isListening) {
+      stopListening();
+      setIsListening(false);
+      return;
+    }
+    setVoiceError("");
+    setVoiceMessage("");
+    playUiSound("listen");
+    startListening({
+      onStart: () => setIsListening(true),
+      onEnd: () => setIsListening(false),
+      onError: (msg) => {
+        setVoiceError(msg);
+        playUiSound("error");
+      },
+      onResult: (text) => {
+        playUiSound("tap");
+        const matched = matchSymptomsFromSpeech(text, allSymptomNames);
+        if (matched.length) {
+          setSelectedSymptoms((prev) => [...new Set([...prev, ...matched])]);
+          setVoiceMessage(`Added: ${matched.join(", ")}`);
+          if (soundOn) {
+            speak(`Selected ${matched.join(", ")}`);
+          }
+        } else {
+          setVoiceMessage(`Heard: "${text}". Say symptom names like chest pain or headache, or tap the list.`);
+        }
+      },
+    });
+  }, [allSymptomNames, isListening, soundOn]);
+
+  const handleSpeakResults = useCallback(() => {
+    if (!analysisResult) return;
+    const label = analysisResult.primaryCondition || "Symptom analysis";
+    const conf = analysisResult.confidence ?? 0;
+    const sev = analysisResult.severity || "low";
+    const tips = getRecommendationsForResult(analysisResult).slice(0, 2).join(" ");
+    const script = `${label}. ${prediction}. Match strength ${conf} percent. ${sev} risk. ${tips}`;
+    speak(script);
+    playUiSound("tap");
+  }, [analysisResult, prediction]);
+
   const goToNextSection = () => {
     if (currentSectionIndex < sectionNames.length - 1) {
       setCurrentSectionIndex(currentSectionIndex + 1);
@@ -170,9 +250,7 @@ const NoveltyComponent = () => {
       return;
     }
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/novelty/analyze`,
-        {
+      const response = await fetch(apiUrl("/api/novelty/analyze"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ symptoms: selectedSymptoms }),
@@ -191,10 +269,16 @@ const NoveltyComponent = () => {
 
       const sev = data.severity || "low";
       setSeverity(sev);
+      playUiSound("success");
+      if (soundOn) {
+        speak(
+          `Analysis complete. ${data.primaryCondition || "Result"}: ${result}. Severity ${sev}.`
+        );
+      }
 
       const token = localStorage.getItem("token");
       if (token) {
-        fetch(`${import.meta.env.VITE_API_URL}/api/analysis/save`, {
+        fetch(apiUrl("/api/analysis/save"), {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -208,6 +292,10 @@ const NoveltyComponent = () => {
       setAnalysisResult(null);
       setPrediction("Error analyzing symptoms. Try again later.");
       setSeverity("unknown");
+      playUiSound("error");
+      if (soundOn) {
+        speak("Sorry, analysis failed. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
@@ -292,7 +380,7 @@ const NoveltyComponent = () => {
             AI Symptom Analyzer
           </h1>
           <p className="max-w-lg text-center text-gray-600">
-            Select all symptoms you're experiencing for personalized analysis
+            Select symptoms or use your voice — tap the microphone to describe how you feel
           </p>
         </motion.div>
       ) : (
@@ -307,6 +395,19 @@ const NoveltyComponent = () => {
           </h1>
         </motion.div>
       )}
+
+      <SymptomVoicePanel
+        isListening={isListening}
+        voiceMessage={voiceMessage}
+        voiceError={voiceError}
+        soundEnabled={soundOn}
+        onToggleSound={toggleSound}
+        onMicClick={handleMicClick}
+        onSpeakResults={handleSpeakResults}
+        showReadAloud={Boolean(prediction && analysisResult)}
+        showMic={showAllSymptoms && !prediction}
+        recognitionSupported={recognitionSupported}
+      />
 
       {prediction ? (
         <motion.div
@@ -507,7 +608,10 @@ const NoveltyComponent = () => {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={handleSubmit}
+                    onClick={() => {
+                      playUiSound("tap");
+                      handleSubmit();
+                    }}
                     className="px-6 py-3 mt-6 font-medium text-white transition-all transform rounded-lg shadow-lg bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
                   >
                     Start Symptom Analysis

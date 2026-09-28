@@ -30,6 +30,10 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import DownloadIcon from "@mui/icons-material/Download";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import Alert from "@mui/material/Alert";
+import { apiUrl } from "../../utils/apiBase";
+import { brand } from "../../theme/brand";
+import { normalizeVitalsList, buildVitalsTrendChart } from "../../utils/vitalsNormalize";
 
 // Register Chart.js components
 ChartJS.register(
@@ -58,9 +62,9 @@ function HealthTrends() {
   const [filtered, setFiltered] = useState([]);
   const [range, setRange] = useState("7");
   const [loading, setLoading] = useState(true);
-  const [lastPrediction, setLastPrediction] = useState(
-    localStorage.getItem("lastPrediction")
-  ); 
+  const [lastPrediction, setLastPrediction] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [latestVitalsLine, setLatestVitalsLine] = useState("");
 
   const chartRef = useRef();
   const theme = useTheme();
@@ -68,33 +72,59 @@ function HealthTrends() {
 
   useEffect(() => {
     const fetchVitals = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoadError("Sign in to view your vitals trends.");
+        setLoading(false);
+        return;
+      }
+      const headers = { Authorization: `Bearer ${token}` };
       try {
-        const token = localStorage.getItem("token");
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/vitals/user`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const [vitalsRes, summaryRes] = await Promise.all([
+          fetch(apiUrl("/api/vitals/user"), { headers }),
+          fetch(apiUrl("/api/dashboard/summary?portal=patient"), { headers }),
+        ]);
 
-        if (!res.ok) {
-          throw new Error(`Error: ${res.status}`);
+        if (!vitalsRes.ok) {
+          throw new Error(`Vitals API: ${vitalsRes.status}`);
         }
 
-        const data = await res.json();
-        setVitals(data);
-        setFiltered(applyDateFilter(data, 7));
+        const raw = await vitalsRes.json();
+        const normalized = normalizeVitalsList(raw);
+        setVitals(normalized);
+        setFiltered(applyDateFilter(normalized, 7));
+        setLoadError("");
+
+        if (summaryRes.ok) {
+          const summary = await summaryRes.json();
+          const latest = summary.latestVitals;
+          if (latest) {
+            setLatestVitalsLine(
+              `Latest: BP ${latest.bp}, pulse ${latest.pulse}, sugar ${latest.sugar} mg/dL · ${new Date(
+                latest.createdAt
+              ).toLocaleString()}`
+            );
+          }
+          const recent = summary.recentAnalyses?.[0];
+          if (recent?.prediction) {
+            setLastPrediction(recent.prediction);
+          } else {
+            setLastPrediction(localStorage.getItem("lastPrediction") || "");
+          }
+        }
       } catch (err) {
         console.error("Error fetching vitals:", err);
+        setLoadError("Could not load vitals. Check your connection and try again.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchVitals();
-
-    //  Update prediction from localStorage (optional refresh)
-    setLastPrediction(localStorage.getItem("lastPrediction"));
   }, []);
 
   const applyDateFilter = (data, days) => {
+    if (days >= 9999) return data;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
     return data.filter((v) => new Date(v.createdAt) >= cutoff);
@@ -205,6 +235,15 @@ function HealthTrends() {
     },
   };
 
+  const combinedChart = buildVitalsTrendChart(filtered, brand);
+  const combinedOptions = {
+    ...chartOptions,
+    plugins: {
+      ...chartOptions.plugins,
+      legend: { position: "bottom", labels: { boxWidth: 10, padding: 8 } },
+    },
+  };
+
   const renderNoDataMessage = () => (
     <Box
       sx={{
@@ -257,13 +296,43 @@ function HealthTrends() {
             </Typography>
           </Box>
 
+          {loadError && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {loadError}
+            </Alert>
+          )}
+
           {lastPrediction && (
             <Typography
               variant="body1"
-              sx={{ mb: 3, color: COLORS.pink, fontWeight: 500 }}
+              sx={{ mb: 2, color: COLORS.pink, fontWeight: 500 }}
             >
-               Last AI Prediction: {lastPrediction}
+              Latest symptom AI result: {lastPrediction}
             </Typography>
+          )}
+
+          {filtered.length > 0 && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                mb: 3,
+                borderRadius: 2,
+                border: `1px solid ${COLORS.gray}20`,
+              }}
+            >
+              <Typography variant="h6" sx={{ color: COLORS.blue, mb: 1, fontWeight: 600 }}>
+                Combined vitals (same as dashboard)
+              </Typography>
+              {latestVitalsLine && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {latestVitalsLine}
+                </Typography>
+              )}
+              <Box sx={{ height: { xs: 240, md: 300 } }}>
+                <Line data={combinedChart} options={combinedOptions} />
+              </Box>
+            </Paper>
           )}
 
           <Box

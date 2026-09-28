@@ -128,7 +128,7 @@ function ReportUploadDialog({ onClose, onSuccess }) {
         });
       }, 200);
       
-      await uploadMedicalReport(formData);
+      const result = await uploadMedicalReport(formData);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -140,7 +140,7 @@ function ReportUploadDialog({ onClose, onSuccess }) {
           text: "Your report was uploaded. The assistant will use it for personalized doctor recommendations.",
           confirmButtonColor: "#2fb297",
         });
-        onSuccess();
+        onSuccess(result);
         onClose();
       }, 500);
     } catch (error) {

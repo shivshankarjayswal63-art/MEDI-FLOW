@@ -14,8 +14,10 @@ import {
   alpha,
   useMediaQuery,
   useTheme,
+  Tooltip,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import SmartToyOutlinedIcon from "@mui/icons-material/SmartToyOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -36,12 +38,13 @@ import {
   sessionRowsToUiMessages,
 } from "../../utils/medicalAssistantChatStorage";
 import MedicalAssistantActionChips from "./MedicalAssistantActionChips";
+import ReportUploadDialog from "../User Component/MedicalReports/ReportUploadDialog";
 
 const INITIAL_MESSAGES = [
   {
     role: "assistant",
     content:
-      "Welcome to **MEDI FLOW** assistant. Ask about symptoms or say **book appointment** — I remember your chat when you return.",
+      "Welcome to **MEDI FLOW** assistant. Ask about symptoms, **summarize my health history**, upload a **lab report** (attach icon), or say **book appointment** — I remember your chat when you return.",
     animate: false,
   },
 ];
@@ -128,6 +131,7 @@ export default function MedicalAssistantChat() {
   const [urgent, setUrgent] = useState(false);
   const [error, setError] = useState("");
   const [sessionReady, setSessionReady] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const bottomRef = useRef(null);
   const autoSentRef = useRef(false);
 
@@ -292,6 +296,34 @@ export default function MedicalAssistantChat() {
   };
 
   const startBooking = () => sendMessage("book appointment", { forceBooking: true });
+
+  const handleReportUploaded = (uploadResult) => {
+    const fileName =
+      uploadResult?.fileName ||
+      uploadResult?.file_name ||
+      "your report";
+    const summary =
+      uploadResult?.assistantSummary ||
+      uploadResult?.reportSummary ||
+      uploadResult?.report_summary ||
+      "";
+    setMessages((prev) => [
+      ...prev.map((m) => ({ ...m, animate: false })),
+      { role: "user", content: `Uploaded lab report: ${fileName}` },
+      {
+        role: "assistant",
+        content: summary
+          ? `**Report uploaded — AI summary**\n\n${summary}\n\nAsk **summarize my lab report** anytime or say **book appointment** for a matching specialist.`
+          : `**Report uploaded:** ${fileName}. I will use it for doctor recommendations. Say **summarize my lab report** for details.`,
+        fullContent: summary
+          ? `**Report uploaded — AI summary**\n\n${summary}\n\nAsk **summarize my lab report** anytime or say **book appointment** for a matching specialist.`
+          : `**Report uploaded:** ${fileName}. I will use it for doctor recommendations. Say **summarize my lab report** for details.`,
+        animate: true,
+        meta: { source: "rules" },
+        actions: [],
+      },
+    ]);
+  };
 
   const handleNewChat = async () => {
     setMessages(INITIAL_MESSAGES);
@@ -532,6 +564,22 @@ export default function MedicalAssistantChat() {
           )}
 
           <Stack direction="row" spacing={1} alignItems="flex-end">
+            <Tooltip title="Upload lab report (PDF/image) for AI summary">
+              <span>
+                <IconButton
+                  onClick={() => setUploadOpen(true)}
+                  disabled={loading || booking}
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    flexShrink: 0,
+                    border: `1px solid ${alpha(brand.primary, 0.2)}`,
+                  }}
+                >
+                  <AttachFileIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
             <TextField
               fullWidth
               multiline
@@ -562,6 +610,16 @@ export default function MedicalAssistantChat() {
           </Stack>
         </Box>
       </Paper>
+
+      {uploadOpen && (
+        <ReportUploadDialog
+          onClose={() => setUploadOpen(false)}
+          onSuccess={(result) => {
+            setUploadOpen(false);
+            handleReportUploaded(result);
+          }}
+        />
+      )}
     </Box>
   );
 }

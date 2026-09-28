@@ -71,6 +71,20 @@ export async function sendMedicalAssistantMessage(
   }
 }
 
+export async function fetchPatientHealthSummary() {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Sign in as a patient to view your AI health summary.");
+
+  const res = await fetch(apiUrl("/api/medical-assistant/health-summary"), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || "Could not load health summary");
+  }
+  return data;
+}
+
 export async function bookMedicalAssistantSlot({ doctorId, doctorName, specialization, date, time, visitMode }) {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Sign in to book an appointment.");

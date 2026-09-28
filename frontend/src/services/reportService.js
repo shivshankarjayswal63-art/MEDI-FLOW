@@ -1,10 +1,12 @@
 
 import axios from "axios";
-const API = `${import.meta.env.VITE_API_URL}/api/reports`;
+import { apiUrl } from "../utils/apiBase";
+
+const reportsBase = () => apiUrl("/api/reports");
 
 export const getMedicalReports = async () => {
   const token = localStorage.getItem("token");
-  const res = await axios.get(API, {
+  const res = await axios.get(reportsBase(), {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
@@ -12,7 +14,7 @@ export const getMedicalReports = async () => {
 
 export const uploadMedicalReport = async (formData) => {
   const token = localStorage.getItem("token");
-  const res = await axios.post(`${API}/upload`, formData, {
+  const res = await axios.post(`${reportsBase()}/upload`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "multipart/form-data",
@@ -23,7 +25,7 @@ export const uploadMedicalReport = async (formData) => {
 
 export const deleteMedicalReport = async (id) => {
   const token = localStorage.getItem("token");
-  const res = await axios.delete(`${API}/${id}`, {
+  const res = await axios.delete(`${reportsBase()}/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;

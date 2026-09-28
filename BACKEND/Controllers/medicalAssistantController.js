@@ -1,5 +1,9 @@
 const { processMedicalChat } = require("../lib/medicalAssistant");
-const { getPatientHealthContext } = require("../lib/patientHealthContext");
+const {
+  getPatientHealthContext,
+  buildHealthSummaryReply,
+} = require("../lib/patientHealthContext");
+const { polishHealthSummaryReply } = require("../lib/reportLlmSummary");
 const { loadChatSession, appendChatMessages, clearChatSession } = require("../lib/medicalAssistantChatStore");
 const User = require("../Models/UserModel");
 const Appointment = require("../Models/AppoinmentModel");
@@ -97,6 +101,26 @@ exports.chat = async (req, res) => {
         urgent: false,
       });
     }
+  }
+};
+
+exports.healthSummary = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Sign in as a patient to view your AI health summary." });
+    }
+    const patientContext = await getPatientHealthContext(userId);
+    const built = buildHealthSummaryReply(patientContext);
+    const reply =
+      patientContext ? (await polishHealthSummaryReply(built, patientContext)) || built : built;
+    return res.json({
+      reply,
+      source: process.env.NVIDIA_API_KEY && patientContext ? "nemotron" : "rules",
+    });
+  } catch (err) {
+    console.error("medical-assistant health-summary:", err);
+    return res.status(500).json({ message: "Could not generate health summary" });
   }
 };
 
