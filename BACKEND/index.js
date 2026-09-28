@@ -62,7 +62,7 @@ app.use(cors({
   },
   credentials: true // if you use cookies/auth
 }));
-app.use(express.json());
+app.use(express.json({ limit: "12mb" }));
 
 app.get("/", (_req, res) => {
   res.json({

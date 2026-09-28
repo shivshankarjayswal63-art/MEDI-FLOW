@@ -17,6 +17,23 @@ function wrapReportError(err, fallback) {
   throw wrapped;
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("Could not read file"));
+        return;
+      }
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export const getMedicalReports = async () => {
   try {
     const res = await axios.get(reportsBase(), {
@@ -28,16 +45,36 @@ export const getMedicalReports = async () => {
   }
 };
 
+/**
+ * Upload via JSON base64 (reliable on Vercel serverless).
+ * @param {FormData} formData — must contain `report` File and optional `patientNotes`
+ */
 export const uploadMedicalReport = async (formData) => {
   try {
-    // Do not set Content-Type — axios must add multipart boundary automatically.
-    const res = await axios.post(`${reportsBase()}/upload`, formData, {
-      headers: {
-        ...authHeaders(),
+    const file = formData.get("report");
+    if (!file || typeof file === "string") {
+      throw new Error("No file selected.");
+    }
+    const patientNotes = formData.get("patientNotes") || formData.get("notes") || "";
+    const fileBase64 = await fileToBase64(file);
+
+    const res = await axios.post(
+      `${reportsBase()}/upload-base64`,
+      {
+        fileName: file.name,
+        fileType: file.type || "application/pdf",
+        fileBase64,
+        patientNotes: String(patientNotes || "").trim(),
       },
-      maxBodyLength: 12 * 1024 * 1024,
-      maxContentLength: 12 * 1024 * 1024,
-    });
+      {
+        headers: {
+          ...authHeaders(),
+          "Content-Type": "application/json",
+        },
+        maxBodyLength: 14 * 1024 * 1024,
+        maxContentLength: 14 * 1024 * 1024,
+      }
+    );
     return res.data;
   } catch (err) {
     wrapReportError(err, "Upload failed. Use PDF/JPEG/PNG under 10MB.");

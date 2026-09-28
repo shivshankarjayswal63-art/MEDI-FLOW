@@ -56,9 +56,9 @@ function sortReportsNewestFirst(rows) {
   );
 }
 
-exports.uploadReport = async (req, res) => {
+async function handleReportUpload(req, res) {
   try {
-    if (!req.file) {
+    if (!req.file?.buffer?.length && !req.file?.path) {
       return res.status(400).json({ message: "No file uploaded. Use field name 'report'." });
     }
 
@@ -120,6 +120,40 @@ exports.uploadReport = async (req, res) => {
     });
   } catch (err) {
     console.error("uploadReport:", err);
+    res.status(500).json({ message: "Upload failed", error: err.message });
+  }
+}
+
+exports.uploadReport = handleReportUpload;
+
+exports.uploadReportBase64 = async (req, res) => {
+  try {
+    const { fileName, fileType, fileBase64, patientNotes } = req.body || {};
+    if (!fileName || !fileBase64) {
+      return res.status(400).json({ message: "fileName and fileBase64 are required." });
+    }
+    let buffer;
+    try {
+      buffer = Buffer.from(String(fileBase64), "base64");
+    } catch {
+      return res.status(400).json({ message: "Invalid file data." });
+    }
+    if (!buffer.length) {
+      return res.status(400).json({ message: "Empty file." });
+    }
+    if (buffer.length > 10 * 1024 * 1024) {
+      return res.status(413).json({ message: "File too large (max 10MB)." });
+    }
+    req.file = {
+      originalname: String(fileName).slice(0, 255),
+      mimetype: fileType || "application/pdf",
+      buffer,
+      size: buffer.length,
+    };
+    req.body = { patientNotes, notes: patientNotes };
+    return handleReportUpload(req, res);
+  } catch (err) {
+    console.error("uploadReportBase64:", err);
     res.status(500).json({ message: "Upload failed", error: err.message });
   }
 };
