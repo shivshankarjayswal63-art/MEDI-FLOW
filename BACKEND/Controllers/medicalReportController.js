@@ -109,6 +109,8 @@ async function handleReportUpload(req, res) {
       fileBuffer: fileBuffer,
     };
 
+    console.log("uploadReport: incoming file size=", fileBuffer?.length, "mime=", req.file?.mimetype);
+
     const newReport = useSupabase()
       ? await saveReportViaSupabase(saveFields)
       : await persistMedicalReport(saveFields);
