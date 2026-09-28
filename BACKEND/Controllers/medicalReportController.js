@@ -12,6 +12,7 @@ const {
 const { serializeMedicalReport } = require("../lib/serializeMedicalReport");
 const { useSupabase, getSupabase } = require("../config/supabase");
 const { fromDb } = require("../lib/supabaseModel");
+const { saveReportViaSupabase, fetchReportFileBase64 } = require("../lib/reportSupabaseSave");
 
 async function persistMedicalReport(fields) {
   const variants = [
@@ -74,28 +75,29 @@ exports.uploadReport = async (req, res) => {
 
     const ruleSummary = insight.reportSummary;
     let reportSummary = ruleSummary;
-    try {
-      reportSummary = await Promise.race([
-        summarizeReportWithAI({
-          fileName: req.file.originalname,
-          patientNotes,
-          extractedSnippet: insight.extractedSnippet,
-          ruleSummary,
-        }),
-        new Promise((resolve) => setTimeout(() => resolve(ruleSummary), 6000)),
-      ]);
-    } catch {
-      reportSummary = ruleSummary;
-    }
-
-    let fileContentBase64 = null;
-    if (shouldPersistBytesInDb() && fileBuffer && fileBuffer.length > 0) {
-      if (fileBuffer.length <= 8 * 1024 * 1024) {
-        fileContentBase64 = fileBuffer.toString("base64");
+    const skipLlm = Boolean(process.env.VERCEL);
+    if (!skipLlm) {
+      try {
+        reportSummary = await Promise.race([
+          summarizeReportWithAI({
+            fileName: req.file.originalname,
+            patientNotes,
+            extractedSnippet: insight.extractedSnippet,
+            ruleSummary,
+          }),
+          new Promise((resolve) => setTimeout(() => resolve(ruleSummary), 4000)),
+        ]);
+      } catch {
+        reportSummary = ruleSummary;
       }
     }
 
-    const newReport = await persistMedicalReport({
+    let fileContentBase64 = null;
+    if (shouldPersistBytesInDb() && fileBuffer && fileBuffer.length > 0 && fileBuffer.length <= 4 * 1024 * 1024) {
+      fileContentBase64 = fileBuffer.toString("base64");
+    }
+
+    const saveFields = {
       userId: req.user.id,
       fileName: req.file.originalname,
       filePath: diskPath,
@@ -104,7 +106,11 @@ exports.uploadReport = async (req, res) => {
       aiTags: insight.aiTags || [],
       patientNotes: patientNotes || null,
       fileContentBase64,
-    });
+    };
+
+    const newReport = useSupabase()
+      ? await saveReportViaSupabase(saveFields)
+      : await persistMedicalReport(saveFields);
 
     res.status(201).json({
       ...serializeMedicalReport(newReport),
@@ -175,7 +181,17 @@ exports.downloadReport = async (req, res) => {
     const fileName = report.fileName || report.file_name || "report.pdf";
     const mime = report.fileType || report.file_type || "application/pdf";
 
-    const buf = readReportBuffer(report);
+    let buf = readReportBuffer(report);
+    if ((!buf || !buf.length) && useSupabase()) {
+      const b64 = await fetchReportFileBase64(req.params.id);
+      if (b64) {
+        try {
+          buf = Buffer.from(b64, "base64");
+        } catch {
+          buf = null;
+        }
+      }
+    }
     if (buf && buf.length > 0) {
       const isPdf = mime === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
       const sendType = isPdf ? "application/pdf" : mime;

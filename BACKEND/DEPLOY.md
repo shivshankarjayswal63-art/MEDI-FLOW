@@ -116,6 +116,8 @@ Doctor emails cannot use `/login`; staff emails cannot use `/login-doctor`. JWT 
 
 **Lab report file storage (Vercel):** run `supabase/migrations/006_medical_report_file_content.sql` so uploaded PDFs are stored in the database and **View PDF** works after deploy.
 
+**Lab report upload:** the API uses `formidable` (not multer) for multipart on Vercel. After changing `BACKEND/package.json`, redeploy the **API** project so `npm install` runs on Vercel.
+
 **Doctor verification (recommended):** run `supabase/migrations/005_doctor_approval.sql` so new doctor sign-ups stay **pending** until a platform admin approves them under **User Admin → Doctor verification** (`/Doctor-Approvals`). Only **approved** doctors appear in `/api/doctor/public`, booking, and the medical assistant.
 
 ### Custom subdomain + backend (recommended)

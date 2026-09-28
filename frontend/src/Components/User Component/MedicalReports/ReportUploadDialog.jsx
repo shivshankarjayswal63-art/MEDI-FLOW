@@ -145,8 +145,9 @@ function ReportUploadDialog({ onClose, onSuccess }) {
       }, 500);
     } catch (error) {
       console.error("Upload error:", error);
+      const data = error.response?.data;
       const detail =
-        error.response?.data?.message ||
+        (typeof data === "object" && (data?.error || data?.message)) ||
         error.message ||
         "There was a problem uploading your report. Please try again.";
       Swal.fire({

@@ -17,6 +17,17 @@ export function getUserFacingApiError(error, fallback = "Something went wrong. P
     return "Our services are temporarily unavailable. Please try again shortly.";
   }
   if (error?.response?.status >= 500) {
+    const detail = error?.response?.data?.error || error?.response?.data?.message;
+    if (detail && typeof detail === "string" && !looksTechnical(detail)) {
+      return detail;
+    }
+    const isHtml =
+      typeof error?.response?.data === "string" &&
+      error.response.data.includes("<!DOCTYPE") &&
+      error.response.data.includes("html");
+    if (isHtml) {
+      return "Upload failed on the server. Please wait a minute and try again after the API redeploys.";
+    }
     return "Our server is having trouble right now. Please try again in a few minutes.";
   }
 

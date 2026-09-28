@@ -27,6 +27,7 @@ function readReportBuffer(report) {
 
 function bufferFromUploadFile(file) {
   if (file?.buffer && file.buffer.length) return file.buffer;
+  if (Buffer.isBuffer(file)) return file;
   if (file?.path && fs.existsSync(file.path)) {
     try {
       return fs.readFileSync(file.path);
