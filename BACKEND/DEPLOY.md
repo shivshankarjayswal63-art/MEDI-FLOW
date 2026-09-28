@@ -69,6 +69,16 @@ Open in browser:
 
 You should see JSON (doctor list), not HTML.
 
+**Lab report upload (patient portal):** after each API deploy, open  
+`https://YOUR-BACKEND-URL/api/health` — the JSON must include  
+`capabilities.reportUploadBase64: true`. If it is missing, the API project is still on an old build; **Redeploy** the `medi-flow-api` project (Root Directory **`BACKEND`**).
+
+Run in Supabase SQL Editor (once per project):
+
+`supabase/migrations/006_medical_report_file_content.sql`
+
+so uploaded PDFs can be opened from the portal (stores bytes in `file_content_base64`).
+
 ### Demo data (patient dashboard)
 
 From your machine (with `BACKEND/.env` pointing at the **same** Supabase project as production):

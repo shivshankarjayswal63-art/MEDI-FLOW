@@ -13,6 +13,15 @@ export function getUserFacingApiError(error, fallback = "Something went wrong. P
   if (error?.response?.status === 403) {
     return error.response?.data?.message || "You do not have permission to do that.";
   }
+  if (error?.response?.status === 413) {
+    return "File is too large for upload on the cloud server. Please use a PDF under 3 MB.";
+  }
+  if (error?.response?.status === 404) {
+    const url = String(error?.config?.url || "");
+    if (url.includes("/upload-base64")) {
+      return "Lab upload is not available on the API yet. Redeploy the medi-flow-api Vercel project from the latest main branch, then try again.";
+    }
+  }
   if (error?.response?.status === 503) {
     return "Our services are temporarily unavailable. Please try again shortly.";
   }

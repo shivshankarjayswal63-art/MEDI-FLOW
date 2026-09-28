@@ -1,5 +1,5 @@
 import axios from "axios";
-import { apiUrl } from "../utils/apiBase";
+import { apiUrl, getMaxReportUploadBytes } from "../utils/apiBase";
 import { getUserFacingApiError } from "../utils/apiErrors";
 
 const reportsBase = () => apiUrl("/api/reports");
@@ -54,6 +54,11 @@ export const uploadMedicalReport = async (formData) => {
     const file = formData.get("report");
     if (!file || typeof file === "string") {
       throw new Error("No file selected.");
+    }
+    const maxBytes = getMaxReportUploadBytes();
+    if (file.size > maxBytes) {
+      const mb = Math.round(maxBytes / (1024 * 1024));
+      throw new Error(`File is too large. Use a PDF or image under ${mb} MB.`);
     }
     const patientNotes = formData.get("patientNotes") || formData.get("notes") || "";
     const fileBase64 = await fileToBase64(file);

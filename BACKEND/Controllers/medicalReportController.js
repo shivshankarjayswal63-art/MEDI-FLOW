@@ -141,8 +141,10 @@ exports.uploadReportBase64 = async (req, res) => {
     if (!buffer.length) {
       return res.status(400).json({ message: "Empty file." });
     }
-    if (buffer.length > 10 * 1024 * 1024) {
-      return res.status(413).json({ message: "File too large (max 10MB)." });
+    const maxBytes = process.env.VERCEL ? 3 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (buffer.length > maxBytes) {
+      const mb = Math.round(maxBytes / (1024 * 1024));
+      return res.status(413).json({ message: `File too large (max ${mb}MB on cloud).` });
     }
     req.file = {
       originalname: String(fileName).slice(0, 255),

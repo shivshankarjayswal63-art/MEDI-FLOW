@@ -86,7 +86,14 @@ app.get("/api/health", async (_req, res) => {
   }
   try {
     await connectDatabase();
-    res.json({ ok: true, database: useSupabase() ? "supabase" : "mongodb" });
+    res.json({
+      ok: true,
+      database: useSupabase() ? "supabase" : "mongodb",
+      capabilities: {
+        reportUploadBase64: true,
+        reportUploadMultipart: true,
+      },
+    });
   } catch (err) {
     res.status(503).json({ ok: false, message: err.message });
   }

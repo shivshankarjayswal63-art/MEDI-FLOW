@@ -36,3 +36,12 @@ export function apiUrl(path) {
   const p = path.startsWith("/") ? path : `/${path}`;
   return base ? `${base}${p}` : p;
 }
+
+/** Vercel request body limit (~4.5MB); base64 JSON needs headroom. */
+export function getMaxReportUploadBytes() {
+  const base = getApiBase();
+  if (!base || /localhost|127\.0\.0\.1/.test(base)) {
+    return 10 * 1024 * 1024;
+  }
+  return 3 * 1024 * 1024;
+}

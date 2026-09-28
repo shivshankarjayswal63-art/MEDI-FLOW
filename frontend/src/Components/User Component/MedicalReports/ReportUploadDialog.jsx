@@ -26,6 +26,7 @@ import {
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { uploadMedicalReport } from "../../../services/reportService";
+import { getMaxReportUploadBytes } from "../../../utils/apiBase";
 import Swal from "sweetalert2";
 
 function ReportUploadDialog({ onClose, onSuccess }) {
@@ -72,12 +73,13 @@ function ReportUploadDialog({ onClose, onSuccess }) {
       return;
     }
     
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
+    const maxBytes = getMaxReportUploadBytes();
+    if (file.size > maxBytes) {
+      const mb = Math.round(maxBytes / (1024 * 1024));
       Swal.fire({
         icon: 'error',
         title: 'File Too Large',
-        text: 'File size should not exceed 10MB.',
+        text: `File size should not exceed ${mb} MB.`,
         confirmButtonColor: '#2b2c6c',
       });
       return;
