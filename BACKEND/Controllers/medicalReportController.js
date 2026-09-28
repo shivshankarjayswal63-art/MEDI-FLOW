@@ -109,7 +109,15 @@ async function handleReportUpload(req, res) {
       fileBuffer: fileBuffer,
     };
 
-    console.log("uploadReport: incoming file size=", fileBuffer?.length, "mime=", req.file?.mimetype);
+    console.log("uploadReport: incoming file size=", fileBuffer?.length, "mime=", req.file?.mimetype, "headers=", {
+      "content-type": req.headers["content-type"],
+      origin: req.headers["origin"],
+    });
+    try {
+      console.log("uploadReport: file first bytes:", fileBuffer && fileBuffer.length ? fileBuffer.slice(0, 8).toString("hex") : null);
+    } catch (e) {
+      console.warn("uploadReport: failed reading buffer prefix", e?.message || e);
+    }
 
     const newReport = useSupabase()
       ? await saveReportViaSupabase(saveFields)
