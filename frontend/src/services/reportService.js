@@ -60,26 +60,16 @@ export const uploadMedicalReport = async (formData) => {
       const mb = Math.round(maxBytes / (1024 * 1024));
       throw new Error(`File is too large. Use a PDF or image under ${mb} MB.`);
     }
-    const patientNotes = formData.get("patientNotes") || formData.get("notes") || "";
-    const fileBase64 = await fileToBase64(file);
 
-    const res = await axios.post(
-      `${reportsBase()}/upload-base64`,
-      {
-        fileName: file.name,
-        fileType: file.type || "application/pdf",
-        fileBase64,
-        patientNotes: String(patientNotes || "").trim(),
+    // Use multipart upload to avoid base64/JSON size limits
+    const res = await axios.post(`${reportsBase()}/upload`, formData, {
+      headers: {
+        ...authHeaders(),
+        // multipart boundary will be set by the browser/axios
       },
-      {
-        headers: {
-          ...authHeaders(),
-          "Content-Type": "application/json",
-        },
-        maxBodyLength: 14 * 1024 * 1024,
-        maxContentLength: 14 * 1024 * 1024,
-      }
-    );
+      maxBodyLength: 50 * 1024 * 1024,
+      maxContentLength: 50 * 1024 * 1024,
+    });
     return res.data;
   } catch (err) {
     wrapReportError(err, "Upload failed. Use PDF/JPEG/PNG under 10MB.");
