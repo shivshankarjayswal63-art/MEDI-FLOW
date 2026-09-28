@@ -54,7 +54,7 @@ function Home() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-white w-full max-w-[100vw] overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-white w-full overflow-x-hidden">
       <Nav />
       
       {/* Hero Section */}

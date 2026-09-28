@@ -96,6 +96,7 @@ function App() {
           <Route path="/Our-Facilities" element={<OurFacilities />} />
           <Route path="/FAQ" element={<FAQPage />} />
           <Route path="/Privacy-Policy" element={<PrivacyPolicy />} />
+          <Route path="/Terms-Conditions" element={<TermsConditions />} />
           <Route
             path="/Find-Doctor"
             element={
