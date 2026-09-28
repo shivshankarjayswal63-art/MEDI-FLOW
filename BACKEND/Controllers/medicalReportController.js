@@ -75,21 +75,17 @@ async function handleReportUpload(req, res) {
 
     const ruleSummary = insight.reportSummary;
     let reportSummary = ruleSummary;
-    const skipLlm = Boolean(process.env.VERCEL);
-    if (!skipLlm) {
-      try {
-        reportSummary = await Promise.race([
-          summarizeReportWithAI({
-            fileName: req.file.originalname,
-            patientNotes,
-            extractedSnippet: insight.extractedSnippet,
-            ruleSummary,
-          }),
-          new Promise((resolve) => setTimeout(() => resolve(ruleSummary), 4000)),
-        ]);
-      } catch {
-        reportSummary = ruleSummary;
-      }
+    try {
+      // The model client has its own 12-second timeout; let it finish on
+      // serverless too so successful AI summaries are saved with the report.
+      reportSummary = await summarizeReportWithAI({
+        fileName: req.file.originalname,
+        patientNotes,
+        extractedSnippet: insight.extractedSnippet,
+        ruleSummary,
+      });
+    } catch {
+      reportSummary = ruleSummary;
     }
 
     let fileContentBase64 = null;
