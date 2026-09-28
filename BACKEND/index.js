@@ -140,16 +140,23 @@ app.use((err, req, res, _next) => {
   });
 });
 
-connectDatabase()
-  .then(() => {
-    if (process.env.NODE_ENV !== "production") {
-      const PORT = process.env.PORT || 5000;
-      app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-      });
-    }
-  })
-  .catch((err) => console.error("Database connection error:", err));
+if (process.env.SKIP_DB_CONNECT === "true") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} (DB connect skipped)`);
+  });
+} else {
+  connectDatabase()
+    .then(() => {
+      if (process.env.NODE_ENV !== "production") {
+        const PORT = process.env.PORT || 5000;
+        app.listen(PORT, () => {
+          console.log(`Server running on port ${PORT}`);
+        });
+      }
+    })
+    .catch((err) => console.error("Database connection error:", err));
+}
 
 module.exports = app;
 
