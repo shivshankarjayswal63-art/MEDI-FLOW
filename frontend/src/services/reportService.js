@@ -63,42 +63,54 @@ export const uploadMedicalReport = async (formData) => {
 
     // Choose upload strategy:
     // - On Vercel same-origin (no external API base) prefer JSON/base64 (`/upload-base64`).
+    // - If the deployed API does not have `/upload-base64` yet, fall back to `/upload`.
     // - Otherwise use multipart `/upload`. If multipart fails, fallback to base64 when file size permits.
     const base = apiUrl("");
     const useBase64ByDefault = !base; // empty base => same-origin (Vercel)
 
-    if (useBase64ByDefault) {
-      const patientNotes = formData.get("patientNotes") || formData.get("notes") || "";
-      const fileBase64 = await fileToBase64(file);
-      const res = await axios.post(
-        `${reportsBase()}/upload-base64`,
-        {
-          fileName: file.name,
-          fileType: file.type || "application/pdf",
-          fileBase64,
-          patientNotes: String(patientNotes || "").trim(),
-        },
-        {
-          headers: {
-            ...authHeaders(),
-            "Content-Type": "application/json",
-          },
-          maxBodyLength: 14 * 1024 * 1024,
-          maxContentLength: 14 * 1024 * 1024,
-        }
-      );
-      return res.data;
-    }
-
-    // Try multipart upload first
-    try {
-      const res = await axios.post(`${reportsBase()}/upload`, formData, {
+    const postMultipart = () =>
+      axios.post(`${reportsBase()}/upload`, formData, {
         headers: {
           ...authHeaders(),
         },
         maxBodyLength: 50 * 1024 * 1024,
         maxContentLength: 50 * 1024 * 1024,
       });
+
+    if (useBase64ByDefault) {
+      const patientNotes = formData.get("patientNotes") || formData.get("notes") || "";
+      const fileBase64 = await fileToBase64(file);
+      try {
+        const res = await axios.post(
+          `${reportsBase()}/upload-base64`,
+          {
+            fileName: file.name,
+            fileType: file.type || "application/pdf",
+            fileBase64,
+            patientNotes: String(patientNotes || "").trim(),
+          },
+          {
+            headers: {
+              ...authHeaders(),
+              "Content-Type": "application/json",
+            },
+            maxBodyLength: 14 * 1024 * 1024,
+            maxContentLength: 14 * 1024 * 1024,
+          }
+        );
+        return res.data;
+      } catch (err) {
+        // Older API deployments still expose multipart `/upload`. Retry there
+        // only when the base64 route itself is missing, not for upload errors.
+        if (err?.response?.status !== 404) throw err;
+        const fallbackRes = await postMultipart();
+        return fallbackRes.data;
+      }
+    }
+
+    // Try multipart upload first
+    try {
+      const res = await postMultipart();
       return res.data;
     } catch (err) {
       // If multipart failed and file is within base64 limit, try base64 fallback
