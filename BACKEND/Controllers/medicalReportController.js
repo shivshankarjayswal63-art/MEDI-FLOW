@@ -13,6 +13,40 @@ const { serializeMedicalReport } = require("../lib/serializeMedicalReport");
 const { useSupabase, getSupabase } = require("../config/supabase");
 const { fromDb } = require("../lib/supabaseModel");
 
+async function persistMedicalReport(fields) {
+  const variants = [
+    fields,
+    { ...fields, fileContentBase64: undefined },
+    {
+      userId: fields.userId,
+      fileName: fields.fileName,
+      filePath: fields.filePath,
+      fileType: fields.fileType,
+      reportSummary: fields.reportSummary,
+      aiTags: fields.aiTags,
+      patientNotes: fields.patientNotes,
+    },
+    {
+      userId: fields.userId,
+      fileName: fields.fileName,
+      filePath: fields.filePath,
+      fileType: fields.fileType,
+    },
+  ];
+  let lastErr;
+  for (const payload of variants) {
+    const doc = new MedicalReport(payload);
+    try {
+      await doc.save();
+      return doc;
+    } catch (err) {
+      lastErr = err;
+      console.warn("persistMedicalReport:", err.message);
+    }
+  }
+  throw lastErr || new Error("Could not save report");
+}
+
 function sortReportsNewestFirst(rows) {
   return [...(rows || [])].sort(
     (a, b) =>
@@ -61,27 +95,16 @@ exports.uploadReport = async (req, res) => {
       }
     }
 
-    const newReport = new MedicalReport({
+    const newReport = await persistMedicalReport({
       userId: req.user.id,
       fileName: req.file.originalname,
       filePath: diskPath,
-      fileType: req.file.mimetype,
+      fileType: req.file.mimetype || "application/pdf",
       reportSummary,
-      aiTags: insight.aiTags,
+      aiTags: insight.aiTags || [],
       patientNotes: patientNotes || null,
       fileContentBase64,
     });
-    try {
-      await newReport.save();
-    } catch (saveErr) {
-      const msg = String(saveErr.message || "");
-      if (fileContentBase64 && /file_content_base64|column/.test(msg)) {
-        newReport.fileContentBase64 = undefined;
-        await newReport.save();
-      } else {
-        throw saveErr;
-      }
-    }
 
     res.status(201).json({
       ...serializeMedicalReport(newReport),

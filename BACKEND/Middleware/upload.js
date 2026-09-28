@@ -20,8 +20,15 @@ const storage = useMemory
     });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
-  allowedTypes.includes(file.mimetype) ? cb(null, true) : cb(new Error("Invalid file type"));
+  const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
+  const name = String(file.originalname || "").toLowerCase();
+  const okType = allowedTypes.includes(file.mimetype);
+  const okExt = /\.(pdf|jpe?g|png)$/i.test(name);
+  const octetPdf = file.mimetype === "application/octet-stream" && okExt;
+  if (okType || octetPdf || (okExt && !file.mimetype)) {
+    return cb(null, true);
+  }
+  cb(new Error("Invalid file type. Use PDF, JPEG, or PNG."));
 };
 
 const upload = multer({

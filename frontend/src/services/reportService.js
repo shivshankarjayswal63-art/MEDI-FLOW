@@ -13,6 +13,7 @@ function wrapReportError(err, fallback) {
   const message = getUserFacingApiError(err, fallback);
   const wrapped = new Error(message);
   wrapped.cause = err;
+  wrapped.response = err.response;
   throw wrapped;
 }
 
@@ -29,11 +30,13 @@ export const getMedicalReports = async () => {
 
 export const uploadMedicalReport = async (formData) => {
   try {
+    // Do not set Content-Type — axios must add multipart boundary automatically.
     const res = await axios.post(`${reportsBase()}/upload`, formData, {
       headers: {
         ...authHeaders(),
-        "Content-Type": "multipart/form-data",
       },
+      maxBodyLength: 12 * 1024 * 1024,
+      maxContentLength: 12 * 1024 * 1024,
     });
     return res.data;
   } catch (err) {

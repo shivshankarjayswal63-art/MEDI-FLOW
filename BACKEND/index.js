@@ -124,6 +124,14 @@ app.use("/api/search", require("./Routes/SearchRoutes"));
 const path = require("path");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+app.use((err, req, res, _next) => {
+  console.error("API error:", err.message || err);
+  if (res.headersSent) return;
+  const status = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+  res.status(status).json({
+    message: err.message || "Request failed",
+  });
+});
 
 connectDatabase()
   .then(() => {
