@@ -14,7 +14,7 @@ export function getUserFacingApiError(error, fallback = "Something went wrong. P
     return error.response?.data?.message || "You do not have permission to do that.";
   }
   if (error?.response?.status === 413) {
-    return "File is too large for upload on the cloud server. Please use a PDF under 3 MB.";
+    return "File is too large for upload on the cloud server. Please use a file under 10 MB.";
   }
   if (error?.response?.status === 404) {
     const url = String(error?.config?.url || "");
