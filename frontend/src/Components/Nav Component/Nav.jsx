@@ -135,7 +135,7 @@ function Nav() {
 
   return (
 
-    <header className="relative z-50 w-full font-['Hanken_Grotesk'] sticky top-0 bg-white shadow-md overflow-x-hidden overflow-y-visible">
+    <header className="relative z-50 w-full font-['Hanken_Grotesk'] sticky top-0 bg-white shadow-md overflow-x-hidden overflow-y-visible pt-[env(safe-area-inset-top)]">
 
       {/* Quick links strip */}
 

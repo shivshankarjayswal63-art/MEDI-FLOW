@@ -122,8 +122,17 @@ function DoctorLogin() {
   };
 
   return (
-      <Box sx={{ height: "100vh", display: "flex", alignItems: "center" }}>
-        <Container maxWidth="lg">
+    <Box
+      sx={{
+        minHeight: "100dvh",
+        display: "flex",
+        alignItems: "center",
+        py: { xs: 3, sm: 4 },
+        px: { xs: 2, sm: 0 },
+        overflowX: "hidden",
+      }}
+    >
+      <Container maxWidth="lg">
           <Grid container spacing={2} alignItems="center" justifyContent="center">
             {/* Logo Section */}
             <Grid
@@ -144,9 +153,10 @@ function DoctorLogin() {
               <Paper
                 elevation={6}
                 sx={{
-                  padding: 4,
+                  p: { xs: 2.5, sm: 4 },
                   borderRadius: 3,
                   maxWidth: 400,
+                  width: "100%",
                   margin: "0 auto",
                 }}
               >

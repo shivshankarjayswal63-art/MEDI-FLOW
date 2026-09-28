@@ -286,20 +286,20 @@ function BookAppointment() {
 
  if (!isAuthenticated) {
   return (
-    <div className={inPortal ? "" : "bg-[#ffffff] min-h-screen"}>
+    <div className={inPortal ? "mf-page min-w-0" : "mf-page bg-[#ffffff] min-h-screen overflow-x-hidden"}>
       {!inPortal && <Nav />}
       {!inPortal && <SectionHeader title="Book An Appointment" />}
       {inPortal && (
-        <h2 className="text-2xl font-bold text-[#2b2c6c] mb-6">Book an appointment</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-[#2b2c6c] mb-6">Book an appointment</h2>
       )}
-      <div className="container mx-auto px-4 py-12 flex justify-center items-center min-h-[60vh]">
+      <div className="container mx-auto px-3 sm:px-4 py-8 sm:py-12 flex justify-center items-center min-h-[50vh] sm:min-h-[60vh]">
         <div className="w-full max-w-md overflow-hidden">
           {/* Card with glass morphism effect */}
           <div className="border border-gray-100 shadow-xl backdrop-blur-sm bg-white/80 rounded-2xl">
             {/* Top accent bar */}
             <div className="h-2 bg-gradient-to-r from-[#2b2c6c] via-[#8e44ad] to-[#e6317d]"></div>
             
-            <div className="p-10">
+            <div className="p-5 sm:p-8 md:p-10">
               {/* Animated icon */}
               <div className="flex justify-center mb-6">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#2b2c6c] to-[#e6317d] flex items-center justify-center shadow-lg">
@@ -354,7 +354,7 @@ function BookAppointment() {
 
   return (
     <ErrorBoundary>
-      <div className={inPortal ? "" : "bg-[#ffffff] min-h-screen"}>
+      <div className={inPortal ? "mf-page min-w-0" : "mf-page bg-[#ffffff] min-h-screen overflow-x-hidden"}>
         {!inPortal && <Nav />}
         {!inPortal && <SectionHeader title="Book An Appointment" />}
         {inPortal && (

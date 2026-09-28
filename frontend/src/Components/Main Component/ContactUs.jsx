@@ -25,7 +25,7 @@ function ContactUs() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="mf-page flex flex-col min-h-screen">
       <Nav />
       <Box
         sx={{
@@ -34,25 +34,30 @@ function ContactUs() {
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: "#f9fafc",
-          padding: 4,
+          px: { xs: 2, sm: 3 },
+          py: { xs: 3, sm: 4 },
+          width: "100%",
+          minWidth: 0,
         }}
       >
         <Paper
           elevation={6}
           sx={{
-            padding: 4,
+            p: { xs: 2.5, sm: 4 },
             borderRadius: 3,
             maxWidth: 600,
             width: "100%",
+            minWidth: 0,
           }}
         >
           <Typography
             variant="h4"
             sx={{
               fontWeight: 700,
-              marginBottom: 3,
+              mb: { xs: 2, sm: 3 },
               textAlign: "center",
               color: "#2b2c6c",
+              fontSize: { xs: "1.5rem", sm: "2rem" },
             }}
           >
             Contact Us

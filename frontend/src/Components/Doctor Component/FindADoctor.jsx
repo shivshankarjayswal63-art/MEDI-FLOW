@@ -36,8 +36,12 @@ function FindADoctor() {
   );
 
   const content = (
-      <Container maxWidth="lg" sx={{ py: inPortal ? 0 : 6 }}>
-        <Typography variant="h4" fontWeight={700} sx={{ color: brand.primary, mb: 1 }}>
+      <Container maxWidth="lg" sx={{ py: inPortal ? 0 : { xs: 3, sm: 5, md: 6 }, px: { xs: 2, sm: 3 } }}>
+        <Typography
+          variant="h4"
+          fontWeight={700}
+          sx={{ color: brand.primary, mb: 1, fontSize: { xs: "1.5rem", sm: "2rem" } }}
+        >
           Find a Doctor
         </Typography>
         <Typography color="text.secondary" sx={{ mb: 3 }}>

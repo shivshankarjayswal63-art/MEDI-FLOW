@@ -15,4 +15,10 @@ export const pageContainerSx = {
   maxWidth: "100%",
   minWidth: 0,
   overflowX: "hidden",
+  px: { xs: 0, sm: 0 },
 };
+
+export const sectionPyClass = "py-12 sm:py-16 md:py-20 lg:py-24";
+
+export const responsiveHeadingClass =
+  "text-2xl sm:text-3xl md:text-4xl font-bold leading-tight";

@@ -87,7 +87,7 @@ function App() {
   const showChatbot = !hideChatbotOn.includes(location.pathname);
 
   return (
-    <div>
+    <div className="mf-app-shell">
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />

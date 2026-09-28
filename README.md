@@ -330,17 +330,17 @@ Same emails/passwords as [Portals, roles & demo logins](#portals-roles--demo-log
 
 ## Deployment & custom domain
 
-Detailed steps: **[BACKEND/DEPLOY.md](./BACKEND/DEPLOY.md)** and **[VERCEL.md](./VERCEL.md)**.
+Detailed steps: **[docs/SUBDOMAIN_AND_BACKEND.md](./docs/SUBDOMAIN_AND_BACKEND.md)**, **[BACKEND/DEPLOY.md](./BACKEND/DEPLOY.md)**, **[VERCEL.md](./VERCEL.md)**.
 
 **Production checklist for [mediflow.zayacodehub.in](https://mediflow.zayacodehub.in/):**
 
 | Step | Action |
 |------|--------|
 | Frontend Vercel | Root = `frontend`; domain = `mediflow.zayacodehub.in` |
-| API Vercel | Root = `BACKEND`; env: `SUPABASE_*`, `JWT_SECRET` |
-| CORS | `FRONTEND01=https://mediflow.zayacodehub.in` or `CORS_ORIGIN_SUFFIX=zayacodehub.in` on API |
-| Chat / API | Redeploy frontend so `/api` proxy in `frontend/vercel.json` is active |
-| Health check | `https://mediflow.zayacodehub.in/api/health` → JSON |
+| API Vercel | Root = `BACKEND`; domain = `api.mediflow.zayacodehub.in` (optional but recommended) |
+| API env | `SUPABASE_*`, `JWT_SECRET`, `FRONTEND01=https://mediflow.zayacodehub.in`, `CORS_ORIGIN_SUFFIX=zayacodehub.in` |
+| Frontend env | `VITE_API_URL=https://api.mediflow.zayacodehub.in` (or `https://medi-flow-api.vercel.app`) → **Redeploy frontend** |
+| Health check | `https://api.mediflow.zayacodehub.in/api/health` → JSON (not HTML) |
 
 Shorter login reference: **[PORTAL_LOGINS.md](./PORTAL_LOGINS.md)**
 

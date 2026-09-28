@@ -290,17 +290,33 @@ const HealthChatBot = ({ open, onClose }) => {
           elevation={6}
           sx={{
             position: "fixed",
-            bottom: 20,
-            right: 20,
-            width: expanded ? "400px" : "320px",
-            height: minimized ? "60px" : expanded ? "600px" : "480px",
-            borderRadius: "12px",
-            overflow: "hidden",
+            zIndex: 1300,
             display: "flex",
             flexDirection: "column",
+            overflow: "hidden",
             transition: "all 0.3s ease",
-            zIndex: 1300,
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)"
+            borderRadius: "12px",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+            left: { xs: 8, sm: "auto" },
+            right: { xs: 8, sm: 20 },
+            bottom: {
+              xs: "max(8px, env(safe-area-inset-bottom))",
+              sm: 20,
+            },
+            width: {
+              xs: "calc(100vw - 16px)",
+              sm: expanded ? 400 : 320,
+            },
+            maxWidth: {
+              xs: "calc(100vw - 16px)",
+              sm: expanded ? 400 : 320,
+            },
+            height: minimized
+              ? 60
+              : {
+                  xs: expanded ? "min(92dvh, 640px)" : "min(72dvh, 460px)",
+                  sm: expanded ? 600 : 480,
+                },
           }}
         >
           {/* Header */}
@@ -317,7 +333,19 @@ const HealthChatBot = ({ open, onClose }) => {
           >
             <Box display="flex" alignItems="center">
               <AssistantBrandIcon size={32} sx={{ mr: 1 }} />
-              <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>MEDI FLOW Assistant</Typography>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 500,
+                  fontSize: { xs: "0.8rem", sm: "1rem" },
+                  maxWidth: { xs: 140, sm: "none" },
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                MEDI FLOW Assistant
+              </Typography>
             </Box>
             <Box display="flex">
               <IconButton 

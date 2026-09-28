@@ -24,21 +24,28 @@ import Footer from "../Nav Component/Footer";
 
 function AboutUs() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="mf-page flex flex-col min-h-screen">
       <Nav />
 
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-[#2b2c6c] to-[#1e1f4b] text-white py-20">
+      <div className="relative bg-gradient-to-r from-[#2b2c6c] to-[#1e1f4b] text-white py-12 sm:py-16 md:py-20">
         <Container maxWidth="lg">
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={6}>
               <Typography variant="overline" sx={{ color: "#2fb297", fontWeight: "bold", letterSpacing: 2 }}>
                 ABOUT MEDIFLOW
               </Typography>
-              <Typography variant="h2" component="h1" sx={{ fontWeight: 700, mb: 2 }}>
+              <Typography
+                variant="h2"
+                component="h1"
+                sx={{ fontWeight: 700, mb: 2, fontSize: { xs: "1.75rem", sm: "2.25rem", md: "3rem" } }}
+              >
                 Revolutionizing Healthcare Management
               </Typography>
-              <Typography variant="h6" sx={{ mb: 4, opacity: 0.9, fontWeight: 400 }}>
+              <Typography
+                variant="h6"
+                sx={{ mb: 4, opacity: 0.9, fontWeight: 400, fontSize: { xs: "1rem", sm: "1.15rem", md: "1.25rem" } }}
+              >
                 Streamlining healthcare operations to enhance patient care and optimize medical facility management
               </Typography>
               <Button 
@@ -73,7 +80,7 @@ function AboutUs() {
       </div>
 
       {/* Mission & Vision */}
-      <Container maxWidth="lg" sx={{ py: 10 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Grid container spacing={6} alignItems="center">
           <Grid item xs={12} md={6}>
             <Box 
@@ -109,7 +116,7 @@ function AboutUs() {
       </Container>
 
       {/* Core Features */}
-      <Box sx={{ bgcolor: '#f8f9fa', py: 10 }}>
+      <Box sx={{ bgcolor: "#f8f9fa", py: { xs: 6, md: 10 } }}>
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 8 }}>
             <Typography variant="overline" sx={{ color: "#2b2c6c", fontWeight: "bold", letterSpacing: 2 }}>
@@ -176,7 +183,7 @@ function AboutUs() {
       </Box>
 
       {/* Our Team */}
-      <Container maxWidth="lg" sx={{ py: 10 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Box sx={{ textAlign: 'center', mb: 8 }}>
           <Typography variant="overline" sx={{ color: "#2b2c6c", fontWeight: "bold", letterSpacing: 2 }}>
             THE PEOPLE BEHIND MEDIFLOW
@@ -237,7 +244,7 @@ function AboutUs() {
       </Container>
 
       {/* Our Approach */}
-      <Box sx={{ bgcolor: '#f8f9fa', py: 10 }}>
+      <Box sx={{ bgcolor: "#f8f9fa", py: { xs: 6, md: 10 } }}>
         <Container maxWidth="lg">
           <Box sx={{ textAlign: 'center', mb: 6 }}>
             <Typography variant="overline" sx={{ color: "#2b2c6c", fontWeight: "bold", letterSpacing: 2 }}>

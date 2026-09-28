@@ -116,14 +116,15 @@ Doctor emails cannot use `/login`; staff emails cannot use `/login-doctor`. JWT 
 
 **Doctor verification (recommended):** run `supabase/migrations/005_doctor_approval.sql` so new doctor sign-ups stay **pending** until a platform admin approves them under **User Admin → Doctor verification** (`/Doctor-Approvals`). Only **approved** doctors appear in `/api/doctor/public`, booking, and the medical assistant.
 
-### Custom domain + floating AI chat
+### Custom subdomain + backend (recommended)
 
-The frontend can proxy API calls on the **same domain** (`/api/*` → `medi-flow-api.vercel.app`) so the **AI Health Assistant** widget works without CORS issues. **Redeploy the frontend** after pulling latest `frontend/vercel.json`.
+Full guide: **[docs/SUBDOMAIN_AND_BACKEND.md](../docs/SUBDOMAIN_AND_BACKEND.md)**
 
-If you set `VITE_API_URL` to the backend host directly, also set on the **API** project:
+1. **Backend Vercel project** → Domains → add `api.mediflow.zayacodehub.in` (DNS `CNAME` `api.mediflow` → Vercel).
+2. **Frontend Vercel** → `VITE_API_URL=https://api.mediflow.zayacodehub.in` → redeploy frontend.
+3. **API env:** `FRONTEND01=https://mediflow.zayacodehub.in` and/or `CORS_ORIGIN_SUFFIX=zayacodehub.in`.
 
-- `FRONTEND01=https://your-custom-domain` (no trailing slash), **or**
-- `CORS_ORIGIN_SUFFIX=zayacodehub.in` (allows `https://mediflow.zayacodehub.in` and other subdomains)
+The site calls the API host directly (CORS). Same-domain `/api` rewrite in `frontend/vercel.json` is optional and may not work for all POST routes on custom domains.
 
 ---
 

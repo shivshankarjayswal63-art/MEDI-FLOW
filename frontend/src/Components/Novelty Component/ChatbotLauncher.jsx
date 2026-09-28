@@ -25,7 +25,7 @@ const ChatbotLauncher = ({ onOpen }) => {
   }, []);
 
   return (
-    <div className="fixed z-50 flex flex-col items-end bottom-5 right-5">
+    <div className="fixed z-50 flex flex-col items-end safe-fixed-bottom safe-fixed-right max-w-[calc(100vw-1rem)]">
       {showHint && (
         <div className="bg-white text-[#2b2c6c] p-3 rounded-lg shadow-lg mb-2 max-w-[220px] text-sm border border-[#2fb29733]">
           Smart Health assistant — ask about symptoms or book care
