@@ -12,6 +12,7 @@ const ContactUs = lazy(() => import("./Components/Main Component/ContactUs"));
 const OurFacilities = lazy(() => import("./Components/Main Component/OurFacilities"));
 const FAQPage = lazy(() => import("./Components/Main Component/FAQPage"));
 const PrivacyPolicy = lazy(() => import("./Components/Main Component/PrivacyPolicy"));
+const TermsConditions = lazy(() => import("./Components/Main Component/TermsConditions"));
 const FindADoctor = lazy(() => import("./Components/Doctor Component/FindADoctor"));
 const PatientDashboard = lazy(() => import("./Components/Patient Component/PatientDashboard"));
 const OnlineResults = lazy(() => import("./Components/Patient Component/OnlineResults"));

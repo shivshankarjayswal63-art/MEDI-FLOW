@@ -1,6 +1,16 @@
 import React from "react";
-import { Box, Container, Typography, Accordion, AccordionSummary, AccordionDetails, Chip } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {
+  Box,
+  Container,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Chip,
+  Breadcrumbs,
+  Link,
+} from "@mui/material";
+import { ExpandMore } from "@mui/icons-material";
 import Nav from "../Nav Component/Nav";
 import Footer from "../Nav Component/Footer";
 
@@ -35,6 +45,16 @@ const faqItems = [
     answer:
       "Yes. Each role has a dedicated dashboard with tools and permissions based on patient, doctor, pharmacy, or administrative access. Role-based access keeps the platform organized and secure.",
   },
+  {
+    question: "Do you offer a mobile app?",
+    answer:
+      "MEDI FLOW is built with a responsive, mobile-friendly web interface. You can access all core features directly through your mobile browser. A native mobile app is in development and will be announced via our newsletter.",
+  },
+  {
+    question: "How do I reset my password?",
+    answer:
+      "Visit the Login page and click 'Forgot Password'. Enter your registered email address and follow the reset link sent to your inbox. If you do not receive the email, check your spam folder.",
+  },
 ];
 
 function FAQPage() {
@@ -43,7 +63,19 @@ function FAQPage() {
       <Nav />
 
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, px: { xs: 2, sm: 3 } }}>
-        <Box sx={{ mb: 4, textAlign: "center" }}>
+        <Breadcrumbs
+          aria-label="breadcrumb"
+          sx={{ mb: { xs: 2, md: 3 }, "& .MuiBreadcrumbs-separator": { opacity: 0.4 } }}
+        >
+          <Link href="/" className="text-sm text-[#2b2c6c] hover:text-[#2fb297]">
+            Home
+          </Link>
+          <Typography variant="body2" sx={{ color: "#2b2c6c", fontWeight: 600 }}>
+            FAQ
+          </Typography>
+        </Breadcrumbs>
+
+        <Box sx={{ mb: { xs: 3, md: 4 }, textAlign: "center" }}>
           <Chip
             label="Support Center"
             sx={{
@@ -51,6 +83,7 @@ function FAQPage() {
               color: "#1d7f70",
               fontWeight: 700,
               mb: 2,
+              height: 28,
             }}
           />
           <Typography
@@ -71,13 +104,16 @@ function FAQPage() {
               maxWidth: 700,
               mx: "auto",
               lineHeight: 1.7,
+              fontSize: { xs: "0.92rem", md: "1.05rem" },
+              px: { xs: 1, md: 0 },
             }}
           >
-            Everything you need to know about appointments, patient access, healthcare guidance, and MEDI FLOW support.
+            Everything you need to know about appointments, patient access,
+            healthcare guidance, and MEDI FLOW support.
           </Typography>
         </Box>
 
-        <Box sx={{ display: "grid", gap: 2 }}>
+        <Box sx={{ display: "grid", gap: { xs: 1.5, md: 2 } }}>
           {faqItems.map((item, index) => (
             <Accordion
               key={item.question}
@@ -87,19 +123,36 @@ function FAQPage() {
                 boxShadow: "0 10px 30px rgba(43,44,108,0.06)",
                 overflow: "hidden",
                 border: "1px solid rgba(43,44,108,0.08)",
+                ".MuiAccordionSummary-content": { my: 1 },
               }}
             >
               <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
+                expandIcon={<ExpandMore sx={{ color: "#2b2c6c" }} />}
                 sx={{
-                  px: { xs: 2, md: 3 },
+                  px: { xs: 1.5, md: 3 },
                   py: 1,
-                  ".MuiAccordionSummary-content": { my: 1 },
+                  "&:hover": { bgcolor: "rgba(43,44,108,0.02)" },
                 }}
               >
-                <Typography sx={{ fontWeight: 700, color: "#1f2937" }}>{item.question}</Typography>
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    color: "#1f2937",
+                    fontSize: { xs: "0.9rem", md: "1rem" },
+                  }}
+                >
+                  {item.question}
+                </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ px: { xs: 2, md: 3 }, pb: 2.5, color: "#4b5563", lineHeight: 1.8 }}>
+              <AccordionDetails
+                sx={{
+                  px: { xs: 1.5, md: 3 },
+                  pb: 2.5,
+                  color: "#4b5563",
+                  lineHeight: 1.8,
+                  fontSize: { xs: "0.88rem", md: "1rem" },
+                }}
+              >
                 {item.answer}
               </AccordionDetails>
             </Accordion>

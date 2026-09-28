@@ -147,13 +147,11 @@ function Login() {
         },
       });
 
-      setTimeout(() => {
-        if (returnTo && isPatientRole(role)) {
-          navigate(returnTo, { replace: true });
-        } else {
-          navigate(routeForRole(role), { replace: true });
-        }
-      }, 800);
+      if (returnTo && isPatientRole(role)) {
+        navigate(returnTo, { replace: true });
+      } else {
+        navigate(routeForRole(role), { replace: true });
+      }
     } catch (err) {
       const msg = getUserFacingApiError(
         err,

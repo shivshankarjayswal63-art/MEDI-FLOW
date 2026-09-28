@@ -5,43 +5,48 @@ import Footer from "../Nav Component/Footer";
 
 const sections = [
   {
-    title: "1. Information we collect",
+    title: "1. Acceptance of terms",
     text:
-      "We may collect personal and health-related information such as your name, contact information, appointment details, symptoms, and account profile data needed to provide healthcare services through MEDI FLOW.",
+      "By accessing or using MEDI FLOW, you agree to be bound by these Terms and Conditions and all applicable laws and regulations. If you do not agree with any part of these terms, you may not use our services.",
   },
   {
-    title: "2. How we use your information",
+    title: "2. Services",
     text:
-      "Your information helps us manage appointments, support medical consultations, provide dashboards for doctors and staff, improve service quality, and deliver secure patient experiences across the platform.",
+      "MEDI FLOW provides an online healthcare management platform including appointment scheduling, AI-assisted symptom guidance, medical record access, and role-based dashboards for patients, doctors, and staff. We reserve the right to modify or discontinue any part of the service at any time.",
   },
   {
-    title: "3. Data security",
+    title: "3. User responsibilities",
     text:
-      "We use secure authentication, protected storage practices, and access controls to reduce the risk of unauthorized access or disclosure. Only authorized personnel and role-based systems can view specific information.",
+      "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree to provide accurate and complete information during registration and to promptly update any changes.",
   },
   {
-    title: "4. Sharing information",
+    title: "4. Medical disclaimer",
     text:
-      "We do not sell your personal data. Information may be shared only with healthcare personnel, service providers, or authorized administrative users who need it to deliver treatment, support, or platform operations.",
+      "The symptom analysis and AI guidance features are for informational purposes only and do not constitute medical advice. Always consult a qualified healthcare professional for diagnosis and treatment. Do not disregard professional medical advice based on content from MEDI FLOW.",
   },
   {
-    title: "5. Cookies and website analytics",
+    title: "5. Intellectual property",
     text:
-      "The platform may use cookies and analytics tools to improve usability, maintain session information, and understand how visitors use the website. These tools help us optimize the experience for mobile and desktop users.",
+      "All content, logos, graphics, and software on MEDI FLOW are the property of or licensed to MEDI FLOW and are protected by copyright, trademark, and other intellectual property laws. You may not reproduce or distribute any content without prior written consent.",
   },
   {
-    title: "6. Your rights",
+    title: "6. Limitation of liability",
     text:
-      "You may request access to your account information, update personal details, or ask for information about our data handling practices. Please contact our support team through the Contact Us page for assistance.",
+      "To the fullest extent permitted by law, MEDI FLOW shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service, including any errors or delays in content or information provided.",
   },
   {
-    title: "7. Updates to this policy",
+    title: "7. Governing law",
     text:
-      "This privacy policy may be updated as needed to reflect improving security practices, legal requirements, or new features. Updated versions will be reflected on this page with a revised effective date.",
+      "These terms are governed by and construed in accordance with the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts located in Salem, Tamil Nadu.",
+  },
+  {
+    title: "8. Changes to these terms",
+    text:
+      "We may update these Terms and Conditions from time to time. When we do, the revised version will be posted on this page with an updated effective date. Your continued use of the service constitutes acceptance of the new terms.",
   },
 ];
 
-function PrivacyPolicy() {
+function TermsConditions() {
   return (
     <div className="flex min-h-screen flex-col bg-[#f7f9fc]">
       <Nav />
@@ -55,7 +60,7 @@ function PrivacyPolicy() {
             Home
           </Link>
           <Typography variant="body2" sx={{ color: "#2b2c6c", fontWeight: 600 }}>
-            Privacy Policy
+            Terms &amp; Conditions
           </Typography>
         </Breadcrumbs>
 
@@ -87,7 +92,7 @@ function PrivacyPolicy() {
                 fontSize: { xs: "2rem", md: "2.8rem" },
               }}
             >
-              Privacy Policy
+              Terms &amp; Conditions
             </Typography>
           </Box>
 
@@ -101,9 +106,8 @@ function PrivacyPolicy() {
               fontSize: { xs: "0.95rem", md: "1.05rem" },
             }}
           >
-            MEDI FLOW is committed to protecting the privacy and security of the personal and healthcare
-            information we receive from patients, doctors, and staff. This policy explains what information we
-            collect, how we use it, and your rights regarding your data.
+            These Terms and Conditions govern your access to and use of the MEDI FLOW healthcare
+            platform. Please read them carefully before using our services.
           </Typography>
 
           <Box sx={{ display: "grid", gap: { xs: 2.5, md: 3 } }}>
@@ -155,4 +159,4 @@ function PrivacyPolicy() {
   );
 }
 
-export default PrivacyPolicy;
+export default TermsConditions;
