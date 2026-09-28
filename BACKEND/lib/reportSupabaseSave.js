@@ -73,15 +73,19 @@ async function saveReportViaSupabase(fields) {
         const safeName = String(fileName || "file").replace(/\s+/g, "_");
         const objectPath = `reports/${userId}/${ts}-${safeName}`;
         try {
+          const uploadStart = Date.now();
+          console.log("saveReportViaSupabase: starting storage.upload", { bucket, objectPath, bytes: fileBuffer.length });
           const up = await supabase.storage.from(bucket).upload(objectPath, fileBuffer, {
             contentType: fileType || "application/octet-stream",
             upsert: false,
           });
+          const uploadMs = Date.now() - uploadStart;
           if (up.error) {
-            console.warn("supabase storage upload error:", up.error.message, up.error);
+            console.warn("supabase storage upload error:", up.error.message, up.error, { uploadMs });
             // Surface the storage error to caller via thrown error so frontend can see it
             throw new Error(up.error.message || "Supabase storage upload failed");
           } else {
+            console.log("saveReportViaSupabase: storage.upload complete", { uploadMs });
             // Save logical storage path in file_path so download logic can detect it
             row.file_path = `storage://${bucket}/${objectPath}`;
           }
@@ -95,7 +99,10 @@ async function saveReportViaSupabase(fields) {
       console.warn("report upload pre-insert hook failed:", e?.message || e);
     }
 
+    const dbStart = Date.now();
     const { data, error } = await supabase.from("medical_reports").insert(row).select().single();
+    const dbMs = Date.now() - dbStart;
+    console.log("saveReportViaSupabase: db insert complete", { dbMs });
     if (!error && data) {
       return fromDb(data);
     }
