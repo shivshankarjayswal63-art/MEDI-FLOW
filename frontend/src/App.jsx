@@ -1,60 +1,60 @@
-import React, { useState, lazy, Suspense } from "react";
+import React, { useState, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import RoleGuard from "./Components/RoleGuard";
 import DashboardRedirect from "./Components/DashboardRedirect";
+import PatientPortalWrapper from "./Components/Patient Component/PatientPortalWrapper";
+import PatientPortalOrPublic from "./Components/Patient Component/PatientPortalOrPublic";
+import { lazyWithRetry } from "./utils/lazyWithRetry";
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { PageLoader } from "./Components/Loading/MediflowLoader";
 
-const Home = lazy(() => import("./Components/Main Component/Home"));
-const AboutUs = lazy(() => import("./Components/Main Component/AboutUs"));
-const ContactUs = lazy(() => import("./Components/Main Component/ContactUs"));
-const OurFacilities = lazy(() => import("./Components/Main Component/OurFacilities"));
-const FAQPage = lazy(() => import("./Components/Main Component/FAQPage"));
-const PrivacyPolicy = lazy(() => import("./Components/Main Component/PrivacyPolicy"));
-const TermsConditions = lazy(() => import("./Components/Main Component/TermsConditions"));
-const FindADoctor = lazy(() => import("./Components/Doctor Component/FindADoctor"));
-const PatientDashboard = lazy(() => import("./Components/Patient Component/PatientDashboard"));
-const OnlineResults = lazy(() => import("./Components/Patient Component/OnlineResults"));
-const RequestConsultation = lazy(() => import("./Components/Patient Component/RequestConsultation"));
-const PatientPortalWrapper = lazy(() => import("./Components/Patient Component/PatientPortalWrapper"));
-const PatientPortalOrPublic = lazy(() => import("./Components/Patient Component/PatientPortalOrPublic"));
+const Home = lazyWithRetry(() => import("./Components/Main Component/Home"));
+const AboutUs = lazyWithRetry(() => import("./Components/Main Component/AboutUs"));
+const ContactUs = lazyWithRetry(() => import("./Components/Main Component/ContactUs"));
+const OurFacilities = lazyWithRetry(() => import("./Components/Main Component/OurFacilities"));
+const FAQPage = lazyWithRetry(() => import("./Components/Main Component/FAQPage"));
+const PrivacyPolicy = lazyWithRetry(() => import("./Components/Main Component/PrivacyPolicy"));
+const TermsConditions = lazyWithRetry(() => import("./Components/Main Component/TermsConditions"));
+const FindADoctor = lazyWithRetry(() => import("./Components/Doctor Component/FindADoctor"));
+const PatientDashboard = lazyWithRetry(() => import("./Components/Patient Component/PatientDashboard"));
+const OnlineResults = lazyWithRetry(() => import("./Components/Patient Component/OnlineResults"));
+const RequestConsultation = lazyWithRetry(() => import("./Components/Patient Component/RequestConsultation"));
+const UserManagement = lazyWithRetry(() => import("./Components/User Component/UserAdmin/UserManagement"));
+const MyAccount = lazyWithRetry(() => import("./Components/User Component/UserProfile/MyAccount"));
+const Login = lazyWithRetry(() => import("./Components/User Component/Login"));
+const Registration = lazyWithRetry(() => import("./Components/User Component/Registration"));
+const UDashboard = lazyWithRetry(() => import("./Components/User Component/UserAdmin/UDashboard"));
+const ForgotPassword = lazyWithRetry(() => import("./Components/User Component/UserProfile/ForgotPassword"));
+const AddNewUser = lazyWithRetry(() => import("./Components/User Component/UserAdmin/AddNewUser"));
+const DoctorApprovals = lazyWithRetry(() => import("./Components/User Component/UserAdmin/DoctorApprovals"));
 
-const UserManagement = lazy(() => import("./Components/User Component/UserAdmin/UserManagement"));
-const MyAccount = lazy(() => import("./Components/User Component/UserProfile/MyAccount"));
-const Login = lazy(() => import("./Components/User Component/Login"));
-const Registration = lazy(() => import("./Components/User Component/Registration"));
-const UDashboard = lazy(() => import("./Components/User Component/UserAdmin/UDashboard"));
-const ForgotPassword = lazy(() => import("./Components/User Component/UserProfile/ForgotPassword"));
-const AddNewUser = lazy(() => import("./Components/User Component/UserAdmin/AddNewUser"));
-const DoctorApprovals = lazy(() => import("./Components/User Component/UserAdmin/DoctorApprovals"));
+const PDashboard = lazyWithRetry(() => import("./Components/Pharmacy Component/PDashboard"));
+const StockAnalytics = lazyWithRetry(() => import("./Components/Pharmacy Component/StockAnalytics"));
+const OrderAnalytics = lazyWithRetry(() => import("./Components/Pharmacy Component/OrderAnalytics"));
+const StockAdding = lazyWithRetry(() => import("./Components/Pharmacy Component/StockAdding"));
+const RecentOrders = lazyWithRetry(() => import("./Components/Prescription Component/RecentOrders"));
 
-const PDashboard = lazy(() => import("./Components/Pharmacy Component/PDashboard"));
-const StockAnalytics = lazy(() => import("./Components/Pharmacy Component/StockAnalytics"));
-const OrderAnalytics = lazy(() => import("./Components/Pharmacy Component/OrderAnalytics"));
-const StockAdding = lazy(() => import("./Components/Pharmacy Component/StockAdding"));
-const RecentOrders = lazy(() => import("./Components/Prescription Component/RecentOrders"));
+const ADashboard = lazyWithRetry(() => import("./Components/Appointment Component/ADashboard"));
+const BookAppointent = lazyWithRetry(() => import("./Components/Appointment Component/BookAppointent"));
+const AppoinmentDisplay = lazyWithRetry(() => import("./Components/Appointment Component/DisplayAppoinment"));
+const AppoinmentManagement = lazyWithRetry(() => import("./Components/Appointment Component/AppoinmentAdmin/AppoinmentManagement"));
+const RejectedAppoinment = lazyWithRetry(() => import("./Components/Appointment Component/AppoinmentAdmin/RejectedAppoinmentPage"));
 
-const ADashboard = lazy(() => import("./Components/Appointment Component/ADashboard"));
-const BookAppointent = lazy(() => import("./Components/Appointment Component/BookAppointent"));
-const AppoinmentDisplay = lazy(() => import("./Components/Appointment Component/DisplayAppoinment"));
-const AppoinmentManagement = lazy(() => import("./Components/Appointment Component/AppoinmentAdmin/AppoinmentManagement"));
-const RejectedAppoinment = lazy(() => import("./Components/Appointment Component/AppoinmentAdmin/RejectedAppoinmentPage"));
+const DoctorLogin = lazyWithRetry(() => import("./Components/Doctor Component/DoctorLogin"));
+const DoctorRegistration = lazyWithRetry(() => import("./Components/Doctor Component/DoctorRegistration"));
+const DDashboard = lazyWithRetry(() => import("./Components/Doctor Component/DDashboard"));
+const ViewAppointments = lazyWithRetry(() => import("./Components/Doctor Component/ViewAppoinments"));
+const DoctorLeave = lazyWithRetry(() => import("./Components/Doctor Component/DoctorLeave"));
+const DoctorDiagnosis = lazyWithRetry(() => import("./Components/Doctor Component/DoctorDiagnosis"));
+const DiagnosisView = lazyWithRetry(() => import("./Components/Doctor Component/DiagnosisView"));
 
-const DoctorLogin = lazy(() => import("./Components/Doctor Component/DoctorLogin"));
-const DoctorRegistration = lazy(() => import("./Components/Doctor Component/DoctorRegistration"));
-const DDashboard = lazy(() => import("./Components/Doctor Component/DDashboard"));
-const ViewAppointments = lazy(() => import("./Components/Doctor Component/ViewAppoinments"));
-const DoctorLeave = lazy(() => import("./Components/Doctor Component/DoctorLeave"));
-const DoctorDiagnosis = lazy(() => import("./Components/Doctor Component/DoctorDiagnosis"));
-const DiagnosisView = lazy(() => import("./Components/Doctor Component/DiagnosisView"));
-
-const NoveltyComponent = lazy(() => import("./Components/Novelty Component/NoveltyComponent"));
-const AnalysisHistory = lazy(() => import("./Components/Novelty Component/AnalysisHistory"));
-const HealthTrends = lazy(() => import("./Components/Novelty Component/HealthTrends"));
-const VitalsInputForm = lazy(() => import("./Components/Novelty Component/VitalsInputForm"));
-const ChatbotLauncher = lazy(() => import("./Components/Novelty Component/ChatbotLauncher"));
-const HealthChatBot = lazy(() => import("./Components/Novelty Component/HealthChatBot"));
+const NoveltyComponent = lazyWithRetry(() => import("./Components/Novelty Component/NoveltyComponent"));
+const AnalysisHistory = lazyWithRetry(() => import("./Components/Novelty Component/AnalysisHistory"));
+const HealthTrends = lazyWithRetry(() => import("./Components/Novelty Component/HealthTrends"));
+const VitalsInputForm = lazyWithRetry(() => import("./Components/Novelty Component/VitalsInputForm"));
+const ChatbotLauncher = lazyWithRetry(() => import("./Components/Novelty Component/ChatbotLauncher"));
+const HealthChatBot = lazyWithRetry(() => import("./Components/Novelty Component/HealthChatBot"));
 import MedicalAssistantChat from "./Components/Novelty Component/MedicalAssistantChat";
 
 function App() {
@@ -107,10 +107,18 @@ function App() {
           />
           <Route path="/dashboard" element={<DashboardRedirect />} />
 
+          <Route
+            path="/symptom-analysis"
+            element={
+              <PatientPortalOrPublic>
+                <NoveltyComponent />
+              </PatientPortalOrPublic>
+            }
+          />
+
           <Route element={<PatientPortalWrapper />}>
             <Route path="/patient-dashboard" element={<PatientDashboard />} />
             <Route path="/online-results" element={<OnlineResults />} />
-            <Route path="/symptom-analysis" element={<NoveltyComponent />} />
             <Route path="/medical-assistant" element={<MedicalAssistantChat />} />
             <Route path="/enter-vitals" element={<VitalsInputForm />} />
             <Route path="/analysis-history" element={<AnalysisHistory />} />
