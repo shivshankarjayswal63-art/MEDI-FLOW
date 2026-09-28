@@ -4,14 +4,38 @@ const path = require("path");
 const { buildDemoPdf } = require("../lib/demoPdf");
 const { analyzeReport } = require("../lib/reportInsights");
 const { summarizeReportWithAI } = require("../lib/reportLlmSummary");
+const {
+  readReportBuffer,
+  bufferFromUploadFile,
+  shouldPersistBytesInDb,
+} = require("../lib/reportFileBytes");
+const { serializeMedicalReport } = require("../lib/serializeMedicalReport");
+const { useSupabase, getSupabase } = require("../config/supabase");
+const { fromDb } = require("../lib/supabaseModel");
+
+function sortReportsNewestFirst(rows) {
+  return [...(rows || [])].sort(
+    (a, b) =>
+      new Date(b.uploadedAt || b.uploaded_at || 0) -
+      new Date(a.uploadedAt || a.uploaded_at || 0)
+  );
+}
 
 exports.uploadReport = async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded. Use field name 'report'." });
+    }
+
     const patientNotes = req.body?.patientNotes || req.body?.notes || "";
+    const diskPath = req.file.path || `memory://${req.file.originalname}`;
+    const fileBuffer = bufferFromUploadFile(req.file);
+
     const insight = analyzeReport({
       fileName: req.file.originalname,
-      filePath: req.file.path,
+      filePath: req.file.path || diskPath,
       patientNotes,
+      fileBuffer,
     });
 
     const reportSummary = await summarizeReportWithAI({
@@ -21,32 +45,73 @@ exports.uploadReport = async (req, res) => {
       ruleSummary: insight.reportSummary,
     });
 
+    let fileContentBase64 = null;
+    if (shouldPersistBytesInDb() && fileBuffer && fileBuffer.length > 0) {
+      fileContentBase64 = fileBuffer.toString("base64");
+    }
+
     const newReport = new MedicalReport({
       userId: req.user.id,
       fileName: req.file.originalname,
-      filePath: req.file.path,
+      filePath: diskPath,
       fileType: req.file.mimetype,
       reportSummary,
       aiTags: insight.aiTags,
       patientNotes: patientNotes || null,
+      fileContentBase64,
     });
-    await newReport.save();
+    try {
+      await newReport.save();
+    } catch (saveErr) {
+      const msg = String(saveErr.message || "");
+      if (fileContentBase64 && /file_content_base64|column/.test(msg)) {
+        newReport.fileContentBase64 = undefined;
+        await newReport.save();
+      } else {
+        throw saveErr;
+      }
+    }
+
     res.status(201).json({
-      ...newReport,
+      ...serializeMedicalReport(newReport),
       specialties: insight.specialties,
       reportSummary,
       assistantSummary: reportSummary,
     });
   } catch (err) {
+    console.error("uploadReport:", err);
     res.status(500).json({ message: "Upload failed", error: err.message });
   }
 };
 
 exports.getUserReports = async (req, res) => {
   try {
-    const reports = await MedicalReport.find({ userId: req.user.id });
-    res.status(200).json(reports);
+    const userId = req.user.id;
+
+    if (useSupabase()) {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from("medical_reports")
+        .select(
+          "id, user_id, file_name, file_path, file_type, uploaded_at, report_summary, ai_tags, patient_notes"
+        )
+        .eq("user_id", userId)
+        .order("uploaded_at", { ascending: false });
+
+      if (error) {
+        console.error("getUserReports:", error.message);
+        return res.status(500).json({ message: "Failed to fetch reports", error: error.message });
+      }
+
+      const reports = (data || []).map((row) => serializeMedicalReport(fromDb(row)));
+      return res.status(200).json(reports);
+    }
+
+    const reports = await MedicalReport.find({ userId });
+    const sorted = sortReportsNewestFirst(reports).map((r) => serializeMedicalReport(r));
+    res.status(200).json(sorted);
   } catch (err) {
+    console.error("getUserReports:", err);
     res.status(500).json({ message: "Failed to fetch reports", error: err.message });
   }
 };
@@ -64,18 +129,15 @@ exports.downloadReport = async (req, res) => {
     }
 
     const fileName = report.fileName || report.file_name || "report.pdf";
-    const relPath = (report.filePath || report.file_path || "").replace(/\\/g, "/");
-    const absPath = relPath
-      ? path.join(__dirname, "..", relPath.replace(/^\//, ""))
-      : null;
+    const mime = report.fileType || report.file_type || "application/pdf";
 
-    if (absPath && fs.existsSync(absPath)) {
-      const buf = fs.readFileSync(absPath);
-      if (buf.length > 100 && buf[0] === 0x25) {
-        res.setHeader("Content-Type", report.fileType || "application/pdf");
-        res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
-        return res.send(buf);
-      }
+    const buf = readReportBuffer(report);
+    if (buf && buf.length > 0) {
+      const isPdf = mime === "application/pdf" || fileName.toLowerCase().endsWith(".pdf");
+      const sendType = isPdf ? "application/pdf" : mime;
+      res.setHeader("Content-Type", sendType);
+      res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+      return res.send(buf);
     }
 
     const pdf = buildDemoPdf(fileName);
@@ -83,6 +145,7 @@ exports.downloadReport = async (req, res) => {
     res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
     return res.send(pdf);
   } catch (err) {
+    console.error("downloadReport:", err);
     res.status(500).json({ message: "Failed to download report", error: err.message });
   }
 };
@@ -92,10 +155,31 @@ exports.deleteReport = async (req, res) => {
     const report = await MedicalReport.findById(req.params.id);
     if (!report) return res.status(404).json({ message: "Report not found" });
 
-    fs.unlinkSync(path.resolve(report.filePath));
-    await report.deleteOne();
+    const ownerId = report.userId || report.user_id;
+    if (String(ownerId) !== String(req.user.id)) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    const relPath = report.filePath || report.file_path;
+    if (relPath && !String(relPath).startsWith("memory://")) {
+      const abs = path.resolve(path.join(__dirname, "..", String(relPath).replace(/^\//, ""));
+      if (fs.existsSync(abs)) {
+        try {
+          fs.unlinkSync(abs);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    if (typeof report.deleteOne === "function") {
+      await report.deleteOne();
+    } else {
+      await MedicalReport.findByIdAndDelete(req.params.id);
+    }
     res.status(200).json({ message: "Report deleted" });
   } catch (err) {
+    console.error("deleteReport:", err);
     res.status(500).json({ message: "Failed to delete report", error: err.message });
   }
 };

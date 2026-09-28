@@ -24,13 +24,20 @@ function OnlineResults() {
   const [reports, setReports] = useState([]);
   const [openingId, setOpeningId] = useState(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [loadingList, setLoadingList] = useState(true);
 
   const loadReports = useCallback(async () => {
+    setLoadingList(true);
+    setLoadError("");
     try {
       const data = await getMedicalReports();
       setReports(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (err) {
       setReports([]);
+      setLoadError(err.message || "Could not load lab reports.");
+    } finally {
+      setLoadingList(false);
     }
   }, []);
 
@@ -93,7 +100,17 @@ function OnlineResults() {
         <strong>Medical assistant</strong> uses this with your symptoms to recommend the best doctor.
       </Alert>
 
-      {reports.length === 0 ? (
+      {loadError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setLoadError("")}>
+          {loadError}
+        </Alert>
+      )}
+
+      {loadingList ? (
+        <Typography color="text.secondary" sx={{ py: 4, textAlign: "center" }}>
+          Loading reports…
+        </Typography>
+      ) : reports.length === 0 ? (
         <EmptyState
           title="No reports yet"
           message="Upload blood tests, X-rays, or other PDFs. Add a short note so AI can match you to the right specialist."

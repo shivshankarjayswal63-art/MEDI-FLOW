@@ -9,6 +9,7 @@ const medicalReportSchema = new mongoose.Schema({
   reportSummary: { type: String },
   aiTags: { type: [String], default: [] },
   patientNotes: { type: String },
+  fileContentBase64: { type: String },
 });
 
 const { lazyModel } = require("../lib/supabaseModel");

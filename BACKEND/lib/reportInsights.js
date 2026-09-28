@@ -58,8 +58,27 @@ function inferFromText(text) {
 /**
  * Build a short summary + specialty hints from filename, optional notes, and PDF text.
  */
-function analyzeReport({ fileName, filePath, patientNotes }) {
-  const pdfText = extractLoosePdfText(filePath);
+function analyzeReport({ fileName, filePath, patientNotes, fileBuffer }) {
+  let pdfText = "";
+  if (fileBuffer && fileBuffer.length > 0) {
+    try {
+      const raw = fileBuffer.toString("latin1");
+      const parts = [];
+      const paren = /\(([^()\\]{4,200})\)/g;
+      let m;
+      while ((m = paren.exec(raw)) !== null) {
+        const t = m[1].replace(/\\n/g, " ").trim();
+        if (/[a-zA-Z]{3}/.test(t)) parts.push(t);
+        if (parts.length > 40) break;
+      }
+      pdfText = parts.join(" ").slice(0, 4000);
+    } catch {
+      pdfText = "";
+    }
+  }
+  if (!pdfText) {
+    pdfText = extractLoosePdfText(filePath);
+  }
   const combined = `${fileName || ""} ${patientNotes || ""} ${pdfText}`;
   const { specialties, tags } = inferFromText(combined);
 

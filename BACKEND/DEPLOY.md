@@ -114,6 +114,8 @@ Doctor emails cannot use `/login`; staff emails cannot use `/login-doctor`. JWT 
 
 **Patient health profile + report AI tags (optional):** run `supabase/migrations/004_patient_health_profile.sql` for allergies/chronic conditions on `users` and `report_summary` / `ai_tags` on `medical_reports`.
 
+**Lab report file storage (Vercel):** run `supabase/migrations/006_medical_report_file_content.sql` so uploaded PDFs are stored in the database and **View PDF** works after deploy.
+
 **Doctor verification (recommended):** run `supabase/migrations/005_doctor_approval.sql` so new doctor sign-ups stay **pending** until a platform admin approves them under **User Admin → Doctor verification** (`/Doctor-Approvals`). Only **approved** doctors appear in `/api/doctor/public`, booking, and the medical assistant.
 
 ### Custom subdomain + backend (recommended)

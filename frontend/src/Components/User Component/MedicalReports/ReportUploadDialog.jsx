@@ -145,10 +145,14 @@ function ReportUploadDialog({ onClose, onSuccess }) {
       }, 500);
     } catch (error) {
       console.error("Upload error:", error);
+      const detail =
+        error.response?.data?.message ||
+        error.message ||
+        "There was a problem uploading your report. Please try again.";
       Swal.fire({
         icon: "error",
         title: "Upload Failed",
-        text: "There was a problem uploading your report. Please try again.",
+        text: detail,
         confirmButtonColor: "#e03131",
       });
     } finally {
