@@ -47,6 +47,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 import { brand } from "../theme/brand";
+import { apiUrl } from "../utils/apiBase";
 
 import { logout as clearAuth } from "../utils/auth";
 
@@ -112,7 +113,7 @@ export default function DashboardShell({
 
     axios
 
-      .get(`${import.meta.env.VITE_API_URL}/api/notifications`, {
+      .get(apiUrl("/api/notifications"), {
 
         headers: { Authorization: `Bearer ${token}` },
 
@@ -142,7 +143,7 @@ export default function DashboardShell({
 
       axios
 
-        .get(`${import.meta.env.VITE_API_URL}/api/search`, {
+        .get(apiUrl("/api/search"), {
 
           params: { q: searchQ },
 

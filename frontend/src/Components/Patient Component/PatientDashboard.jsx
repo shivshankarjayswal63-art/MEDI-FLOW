@@ -34,6 +34,8 @@ import {
 
   Alert,
 
+  Stack,
+
   useMediaQuery,
 
   useTheme,
@@ -873,11 +875,21 @@ function PatientDashboard() {
 
               )}
 
-              <Button component={Link} to="/online-results" size="small" sx={{ mt: 1 }}>
+              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
 
-                View all results
+                <Button component={Link} to="/online-results" size="small" variant="outlined">
 
-              </Button>
+                  View all
+
+                </Button>
+
+                <Button component={Link} to="/online-results?upload=1" size="small" variant="contained" sx={{ bgcolor: brand.success }}>
+
+                  Upload report
+
+                </Button>
+
+              </Stack>
 
             </CardContent>
 

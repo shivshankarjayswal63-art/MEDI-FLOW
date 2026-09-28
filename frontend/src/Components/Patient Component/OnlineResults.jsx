@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { useNavigate, Link as RouterLink, useSearchParams } from "react-router-dom";
 import {
   Typography,
   Card,
@@ -21,6 +21,7 @@ import ReportUploadDialog from "../User Component/MedicalReports/ReportUploadDia
 
 function OnlineResults() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [reports, setReports] = useState([]);
   const [openingId, setOpeningId] = useState(null);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -49,6 +50,13 @@ function OnlineResults() {
     }
     loadReports();
   }, [navigate, loadReports]);
+
+  useEffect(() => {
+    if (searchParams.get("upload") === "1") {
+      setUploadOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const openReport = async (report) => {
     const id = report._id || report.id;
@@ -101,7 +109,16 @@ function OnlineResults() {
       </Alert>
 
       {loadError && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setLoadError("")}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() => setLoadError("")}
+          action={
+            <Button color="inherit" size="small" onClick={loadReports}>
+              Retry
+            </Button>
+          }
+        >
           {loadError}
         </Alert>
       )}

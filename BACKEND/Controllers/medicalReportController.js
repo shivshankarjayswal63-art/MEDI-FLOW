@@ -38,16 +38,27 @@ exports.uploadReport = async (req, res) => {
       fileBuffer,
     });
 
-    const reportSummary = await summarizeReportWithAI({
-      fileName: req.file.originalname,
-      patientNotes,
-      extractedSnippet: insight.extractedSnippet,
-      ruleSummary: insight.reportSummary,
-    });
+    const ruleSummary = insight.reportSummary;
+    let reportSummary = ruleSummary;
+    try {
+      reportSummary = await Promise.race([
+        summarizeReportWithAI({
+          fileName: req.file.originalname,
+          patientNotes,
+          extractedSnippet: insight.extractedSnippet,
+          ruleSummary,
+        }),
+        new Promise((resolve) => setTimeout(() => resolve(ruleSummary), 6000)),
+      ]);
+    } catch {
+      reportSummary = ruleSummary;
+    }
 
     let fileContentBase64 = null;
     if (shouldPersistBytesInDb() && fileBuffer && fileBuffer.length > 0) {
-      fileContentBase64 = fileBuffer.toString("base64");
+      if (fileBuffer.length <= 8 * 1024 * 1024) {
+        fileContentBase64 = fileBuffer.toString("base64");
+      }
     }
 
     const newReport = new MedicalReport({
@@ -99,8 +110,18 @@ exports.getUserReports = async (req, res) => {
         .order("uploaded_at", { ascending: false });
 
       if (error) {
-        console.error("getUserReports:", error.message);
-        return res.status(500).json({ message: "Failed to fetch reports", error: error.message });
+        console.warn("getUserReports primary select:", error.message);
+        const fallback = await supabase
+          .from("medical_reports")
+          .select("id, user_id, file_name, file_path, file_type, uploaded_at")
+          .eq("user_id", userId)
+          .order("uploaded_at", { ascending: false });
+        if (fallback.error) {
+          console.error("getUserReports:", fallback.error.message);
+          return res.status(500).json({ message: "Failed to fetch reports", error: fallback.error.message });
+        }
+        const reports = (fallback.data || []).map((row) => serializeMedicalReport(fromDb(row)));
+        return res.status(200).json(reports);
       }
 
       const reports = (data || []).map((row) => serializeMedicalReport(fromDb(row)));
@@ -162,7 +183,8 @@ exports.deleteReport = async (req, res) => {
 
     const relPath = report.filePath || report.file_path;
     if (relPath && !String(relPath).startsWith("memory://")) {
-      const abs = path.resolve(path.join(__dirname, "..", String(relPath).replace(/^\//, ""));
+      const rel = String(relPath).replace(/^\/+/, "");
+      const abs = path.resolve(path.join(__dirname, "..", rel));
       if (fs.existsSync(abs)) {
         try {
           fs.unlinkSync(abs);
