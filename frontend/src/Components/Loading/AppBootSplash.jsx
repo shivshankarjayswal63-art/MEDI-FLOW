@@ -48,13 +48,15 @@ export default function AppBootSplash({ children }) {
 
   return (
     <>
-      {children}
-      {showSplash && (
+      {/* When the splash is visible, keep the app children hidden to avoid layout flicker. */}
+      {showSplash ? (
         <MediflowLoader
           variant="fullscreen"
           message="Smart healthcare, powered by AI"
           exiting={exiting}
         />
+      ) : (
+        children
       )}
     </>
   );
