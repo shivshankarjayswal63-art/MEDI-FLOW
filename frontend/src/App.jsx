@@ -10,6 +10,8 @@ const Home = lazy(() => import("./Components/Main Component/Home"));
 const AboutUs = lazy(() => import("./Components/Main Component/AboutUs"));
 const ContactUs = lazy(() => import("./Components/Main Component/ContactUs"));
 const OurFacilities = lazy(() => import("./Components/Main Component/OurFacilities"));
+const FAQPage = lazy(() => import("./Components/Main Component/FAQPage"));
+const PrivacyPolicy = lazy(() => import("./Components/Main Component/PrivacyPolicy"));
 const FindADoctor = lazy(() => import("./Components/Doctor Component/FindADoctor"));
 const PatientDashboard = lazy(() => import("./Components/Patient Component/PatientDashboard"));
 const OnlineResults = lazy(() => import("./Components/Patient Component/OnlineResults"));
@@ -91,6 +93,8 @@ function App() {
           <Route path="/About-Us" element={<AboutUs />} />
           <Route path="/Contact-Us" element={<ContactUs />} />
           <Route path="/Our-Facilities" element={<OurFacilities />} />
+          <Route path="/FAQ" element={<FAQPage />} />
+          <Route path="/Privacy-Policy" element={<PrivacyPolicy />} />
           <Route
             path="/Find-Doctor"
             element={

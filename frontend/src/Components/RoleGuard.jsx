@@ -1,5 +1,5 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 import { getDashboardPath, getStoredRole, isAuthenticated } from "../utils/auth";
 import { defaultLoginPathForAllowedRoles, loginPathForRole } from "../utils/authRoutes";
@@ -8,13 +8,15 @@ import { defaultLoginPathForAllowedRoles, loginPathForRole } from "../utils/auth
  * @param {string[]} allowedRoles - e.g. ['patient'] or ['user_admin']
  */
 export default function RoleGuard({ children, allowedRoles, loginPath }) {
+  const location = useLocation();
   const [ready, setReady] = React.useState(false);
-  const [role, setRole] = React.useState(null);
+  const [role, setRole] = React.useState(() => getStoredRole());
 
   React.useEffect(() => {
-    setRole(getStoredRole());
+    const nextRole = getStoredRole();
+    setRole(nextRole);
     setReady(true);
-  }, []);
+  }, [location.pathname]);
 
   if (!ready) {
     return (
@@ -33,7 +35,10 @@ export default function RoleGuard({ children, allowedRoles, loginPath }) {
     return <Navigate to={signInPath} replace />;
   }
   if (allowedRoles?.length && !allowedRoles.includes(role)) {
-    return <Navigate to={getDashboardPath(role)} replace />;
+    const redirectPath = getDashboardPath(role);
+    if (location.pathname !== redirectPath) {
+      return <Navigate to={redirectPath} replace />;
+    }
   }
   return children;
 }

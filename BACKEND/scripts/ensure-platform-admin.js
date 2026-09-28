@@ -70,7 +70,7 @@ async function main() {
     email: EMAIL,
     password: passwordHash,
     mobile: "0700000000",
-    country: "Sri Lanka",
+    country: "Tamil Nadu",
     city: "Colombo",
     gender: "Not Specified",
     blood_group: "O+",

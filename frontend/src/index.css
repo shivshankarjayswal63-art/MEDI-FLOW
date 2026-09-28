@@ -2,17 +2,39 @@
 
 @import "tailwindcss";
 
+* {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #root {
   width: 100%;
   max-width: 100%;
+  min-height: 100dvh;
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
 }
 
 a {
   text-decoration: none !important;
+}
+
+@media (max-width: 600px) {
+  html {
+    font-size: 15px;
+  }
+
+  body {
+    font-size: 0.95rem;
+  }
 }
 
 @keyframes shake {

@@ -110,7 +110,7 @@ function DoctorLogin() {
         doctorProfile: doctor,
       });
 
-      navigate(routeForRole(role));
+      navigate(routeForRole(role), { replace: true });
     } catch (error) {
       setError(
         getUserFacingApiError(error, "Sign-in failed. Check your email and password.")

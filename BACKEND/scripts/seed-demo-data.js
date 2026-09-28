@@ -177,7 +177,7 @@ async function seedShowcasePatient(supabase, patient, doctors, existingAppts) {
     showcaseAppts.push({
       indexno: `P1-${String(i).padStart(4, "0")}`,
       name: patient.name,
-      address: `${patient.city || "Colombo"}, Sri Lanka`,
+      address: `${patient.city || "Colombo"}, Salem, Tamil Nadu`,
       phone: patient.mobile,
       email: patient.email,
       doctor_name: doc.name,
@@ -242,14 +242,14 @@ async function main() {
   await clearDemo(supabase);
 
   const users = [
-    { name: "User Admin", email: "useradmin@gmail.com", role: "user_admin", password: adminHash, mobile: "0711111111", blood_group: "O+", country: "Sri Lanka", city: "Colombo", gender: "Male" },
-    { name: "Pharmacy Admin", email: "pharmacyadmin@gmail.com", role: "pharmacy_admin", password: adminHash, mobile: "0722222222", blood_group: "A+", country: "Sri Lanka", city: "Kandy", gender: "Female" },
-    { name: "Appointment Admin", email: "appointmentadmin@gmail.com", role: "appointment_admin", password: adminHash, mobile: "0733333333", blood_group: "B+", country: "Sri Lanka", city: "Galle", gender: "Male" },
-    { name: "Alice Perera", email: "patient1@demo.com", role: "patient", password: patientHash, mobile: "0744444444", blood_group: "O+", country: "Sri Lanka", city: "Colombo", gender: "Female", date_of_birth: "1995-03-12" },
-    { name: "Bob Silva", email: "patient2@demo.com", role: "patient", password: patientHash, mobile: "0755555555", blood_group: "A+", country: "Sri Lanka", city: "Kandy", gender: "Male", date_of_birth: "1988-07-22" },
-    { name: "Chitra Fernando", email: "patient3@demo.com", role: "patient", password: patientHash, mobile: "0766666666", blood_group: "B+", country: "Sri Lanka", city: "Negombo", gender: "Female", date_of_birth: "2001-11-05" },
-    { name: "David Jay", email: "patient4@demo.com", role: "patient", password: patientHash, mobile: "0777777777", blood_group: "AB+", country: "Sri Lanka", city: "Matara", gender: "Male", date_of_birth: "1975-01-30" },
-    { name: "Elena Dias", email: "patient5@demo.com", role: "patient", password: patientHash, mobile: "0788888888", blood_group: "O-", country: "Sri Lanka", city: "Jaffna", gender: "Female", date_of_birth: "1992-09-18" },
+    { name: "User Admin", email: "useradmin@gmail.com", role: "user_admin", password: adminHash, mobile: "0711111111", blood_group: "O+", country: "Tamil Nadu", city: "Salem", gender: "Male" },
+    { name: "Pharmacy Admin", email: "pharmacyadmin@gmail.com", role: "pharmacy_admin", password: adminHash, mobile: "0722222222", blood_group: "A+", country: "Tamil Nadu", city: "Salem", gender: "Female" },
+    { name: "Appointment Admin", email: "appointmentadmin@gmail.com", role: "appointment_admin", password: adminHash, mobile: "0733333333", blood_group: "B+", country: "Tamil Nadu", city: "Salem", gender: "Male" },
+    { name: "Alice Perera", email: "patient1@demo.com", role: "patient", password: patientHash, mobile: "0744444444", blood_group: "O+", country: "Tamil Nadu", city: "Salem", gender: "Female", date_of_birth: "1995-03-12" },
+    { name: "Bob Silva", email: "patient2@demo.com", role: "patient", password: patientHash, mobile: "0755555555", blood_group: "A+", country: "Tamil Nadu", city: "Salem", gender: "Male", date_of_birth: "1988-07-22" },
+    { name: "Chitra Fernando", email: "patient3@demo.com", role: "patient", password: patientHash, mobile: "0766666666", blood_group: "B+", country: "Tamil Nadu", city: "Salem", gender: "Female", date_of_birth: "2001-11-05" },
+    { name: "David Jay", email: "patient4@demo.com", role: "patient", password: patientHash, mobile: "0777777777", blood_group: "AB+", country: "Tamil Nadu", city: "Salem", gender: "Male", date_of_birth: "1975-01-30" },
+    { name: "Elena Dias", email: "patient5@demo.com", role: "patient", password: patientHash, mobile: "0788888888", blood_group: "O-", country: "Tamil Nadu", city: "Salem", gender: "Female", date_of_birth: "1992-09-18" },
   ];
 
   let insertedUsers;
@@ -294,7 +294,7 @@ async function main() {
     appointments.push({
       indexno: `DEMO-${String(i).padStart(4, "0")}`,
       name: patient.name,
-      address: `${patient.city}, Sri Lanka`,
+      address: `${patient.city}, Salem, Tamil Nadu`,
       phone: patient.mobile,
       email: patient.email,
       doctor_name: doc.name,

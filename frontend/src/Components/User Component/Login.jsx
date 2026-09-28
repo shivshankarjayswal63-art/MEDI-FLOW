@@ -149,9 +149,9 @@ function Login() {
 
       setTimeout(() => {
         if (returnTo && isPatientRole(role)) {
-          navigate(returnTo);
+          navigate(returnTo, { replace: true });
         } else {
-          navigate(routeForRole(role));
+          navigate(routeForRole(role), { replace: true });
         }
       }, 800);
     } catch (err) {
@@ -293,8 +293,9 @@ function Login() {
             <Paper
               elevation={0}
               sx={{
-                p: { xs: 3, sm: 4 },
+                p: { xs: 2.25, sm: 3, md: 4 },
                 borderRadius: 4,
+                width: "100%",
                 maxWidth: 440,
                 mx: "auto",
                 border: `1px solid ${alpha(brand.primary, 0.08)}`,
